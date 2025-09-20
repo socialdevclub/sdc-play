@@ -54,7 +54,6 @@ const columns = [
 
 const BackofficeParty = () => {
   const { data } = Query.Party.useQueryPartyList();
-  console.debug('🚀 ~ file: index.tsx:6 ~ Backoffice ~ data:', data);
 
   const table = useReactTable({
     columns,

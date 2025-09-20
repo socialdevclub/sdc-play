@@ -10,6 +10,7 @@ interface Props {
 const ProfileSetter = ({ stockId }: Props) => {
   const supabaseSession = useAtomValue(UserStore.supabaseSession);
 
+  const { data: stock } = Query.Stock.useQueryStock(stockId);
   const { data: user } = Query.Supabase.useMyProfile({ supabaseSession });
   const { mutate, isIdle } = Query.Stock.useRegisterUser();
 
@@ -22,6 +23,7 @@ const ProfileSetter = ({ stockId }: Props) => {
 
     if (isIdle) {
       mutate({
+        companyNames: Object.keys(stock?.companies ?? {}),
         stockId,
         userId,
         userInfo: {
@@ -30,7 +32,7 @@ const ProfileSetter = ({ stockId }: Props) => {
         },
       });
     }
-  }, [gender, isIdle, mutate, nickname, stockId, userId]);
+  }, [gender, isIdle, mutate, nickname, stock?.companies, stockId, userId]);
 
   return <></>;
 };

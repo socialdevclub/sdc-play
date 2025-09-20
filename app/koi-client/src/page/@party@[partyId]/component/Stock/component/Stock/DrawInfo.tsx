@@ -77,7 +77,11 @@ const DrawStockInfo = ({ stockId }: Props) => {
 
   const allPrice = myAllSellPrice + (user?.money ?? 0);
   const isDisabled =
-    timeIdx === undefined || timeIdx >= 7 || !stock.isTransaction || allPrice < 1000000 || myInfos.length >= 10;
+    timeIdx === undefined ||
+    timeIdx >= 7 ||
+    !stock.isTransaction ||
+    allPrice < stock.initialMoney ||
+    myInfos.length >= 10;
 
   return (
     <>

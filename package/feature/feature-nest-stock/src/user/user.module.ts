@@ -4,12 +4,11 @@ import { UserService } from './user.service';
 import { UserController } from './user.controller';
 import { UserRepository } from './user.repository';
 import { StockModule } from '../stock.module';
-import { UserProcessor } from './user.processor';
 
 @Module({
   controllers: [UserController],
-  exports: [UserService, UserRepository, UserProcessor],
+  exports: [UserService, UserRepository],
   imports: [HttpModule, forwardRef(() => StockModule)],
-  providers: [UserService, UserRepository, UserProcessor],
+  providers: [UserService, UserRepository],
 })
 export class UserModule {}

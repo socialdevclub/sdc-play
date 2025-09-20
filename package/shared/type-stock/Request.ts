@@ -1,5 +1,5 @@
 import type { ProjectionType, QueryOptions } from 'mongoose';
-import type { StockPhase, StockSchema, StockSchemaWithId, StockUserRequired, StockUserSchema } from '.';
+import type { CompanyInfo, StockPhase, StockSchema, StockSchemaWithId, StockUserRequired, StockUserSchema } from '.';
 
 export type GetStock = {
   stockId: string;
@@ -70,5 +70,22 @@ export type PostSetStockPhase = {
   phase: StockPhase;
 };
 
+export type PostStockInit = Pick<StockSchema, 'maxStockHintCount' | 'maxMarketStockCount'> &
+  (
+    | {
+        isCustomCompanies?: true;
+        companies: Record<string, Pick<CompanyInfo, '가격'>[]>;
+        stockNames?: undefined;
+      }
+    | {
+        isCustomCompanies?: false;
+        companies?: undefined;
+        // 주식 10개 이름 정의
+        stockNames: [string, string, string, string, string, string, string, string, string, string];
+      }
+  );
+
 export type PostCreateUser = Pick<StockUserSchema, StockUserRequired> &
-  Omit<Partial<StockUserSchema>, StockUserRequired>;
+  Omit<Partial<StockUserSchema>, StockUserRequired> & {
+    companyNames: string[];
+  };

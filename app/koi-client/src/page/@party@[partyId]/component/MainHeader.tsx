@@ -41,7 +41,7 @@ const PartyHeader = () => {
   return (
     <ProfileValidator>
       <Header
-        title={stock?.isTransaction ? '주식 게임' : party?.title}
+        title={stock?.gameMode === 'realism' ? '쀼머니게임' : '주식게임'}
         LeftComponent={
           isHost && (
             <ChevronLeft

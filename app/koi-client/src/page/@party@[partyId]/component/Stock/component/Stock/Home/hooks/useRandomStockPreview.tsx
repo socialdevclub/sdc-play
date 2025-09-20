@@ -8,7 +8,7 @@ const TOTAL_ROUND_COUNT = 10;
 const getLowSalesCompanie = (
   remainingStocks: StockSchema['remainingStocks'],
 ): { companyName: string; quantity: number } => {
-  const lowSalesCompanie = objectEntries(remainingStocks).toSorted(([, a], [, b]) => b - a)[0];
+  const lowSalesCompanie = [...objectEntries(remainingStocks)].sort(([, a], [, b]) => b - a)[0];
   return {
     companyName: lowSalesCompanie[0],
     quantity: lowSalesCompanie[1],

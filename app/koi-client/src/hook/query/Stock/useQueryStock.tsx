@@ -21,6 +21,17 @@ const useQueryStock = (stockId: string | undefined, options?: Options) => {
     reactQueryOption: {
       enabled: !!stockId,
       refetchInterval: 1500,
+      select: (data) => {
+        data.maxMarketStockCount = data.maxMarketStockCount ?? Infinity;
+        data.maxPersonalStockCount = data.maxPersonalStockCount ?? Infinity;
+        data.maxStockHintCount = data.maxStockHintCount ?? Infinity;
+        Object.entries(data.remainingStocks).forEach(([company, remainingStock]) => {
+          if (remainingStock === null) {
+            data.remainingStocks[company] = Infinity;
+          }
+        });
+        return data;
+      },
       ...options,
     },
   });

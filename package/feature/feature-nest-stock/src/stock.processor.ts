@@ -1,11 +1,9 @@
 import { HttpException, HttpStatus, Inject, Injectable, forwardRef } from '@nestjs/common';
 import type { Request, Response } from 'shared~type-stock';
 import { getDateDistance } from '@toss/date';
-import { isStockOverLimit } from 'shared~config/dist/stock';
 import dayjs from 'dayjs';
 import { UserRepository } from './user/user.repository';
 import { StockRepository } from './stock.repository';
-import { LogService } from './log/log.service';
 
 @Injectable()
 export class StockProcessor {
@@ -13,7 +11,6 @@ export class StockProcessor {
     @Inject(forwardRef(() => UserRepository))
     private readonly userRepository: UserRepository,
     private readonly stockRepository: StockRepository,
-    private readonly logService: LogService,
   ) {}
 
   async buyStock(
@@ -30,7 +27,6 @@ export class StockProcessor {
         this.userRepository.find({ stockId }, { consistentRead: true }),
       ]);
       const user = users.find((v) => v.userId === userId);
-      const playerCount = users.length;
 
       if (!stock) {
         throw new Error('스톡 정보를 불러올 수 없습니다');
@@ -55,7 +51,7 @@ export class StockProcessor {
         throw new Error('회사를 찾을 수 없습니다');
       }
 
-      if (remainingStocks[company] < amount) {
+      if (remainingStocks[company] !== null && remainingStocks[company] < amount) {
         throw new Error('시장에 주식이 없습니다');
       }
 
@@ -79,32 +75,21 @@ export class StockProcessor {
 
       const companyCount = stockStorage.stockCountCurrent;
 
-      if (isStockOverLimit(playerCount, companyCount, amount)) {
-        throw new Error('주식 보유 한도 초과');
-      }
-
-      // 필요한 로그 확인
-      // const log = await this.logService.findOne({ queueId: attributes?.queueMessageId });
-
-      // switch (log?.status) {
-      //   case 'CANCEL':
-      //     throw new Error('취소된 요청입니다');
-      //   case 'FAILED':
-      //     throw new Error('실패된 요청입니다');
-      //   case 'SUCCESS':
-      //     throw new Error('이미 처리된 요청입니다');
-      //   default:
-      // }
-
       // 평균 단가 업데이트 (기존 금액 * 기존 수량 + 현재 금액 * 구매 수량) / (기존 수량 + 구매 수량)
       const stockAveragePrice =
         (stockStorage.stockAveragePrice * stockStorage.stockCountCurrent + companyPrice * amount) /
         (stockStorage.stockCountCurrent + amount);
 
+      const stockAveragePriceHistory = [...stockStorage.stockAveragePriceHistory];
+      for (let i = idx; i < stockAveragePriceHistory.length; i++) {
+        stockAveragePriceHistory[i] = stockAveragePrice;
+      }
+
       // 주식 및 보유량 업데이트
       const updatedStockStorage = {
         ...stockStorage,
         stockAveragePrice,
+        stockAveragePriceHistory,
         stockCountCurrent: companyCount + amount,
         stockCountHistory: [...stockStorage.stockCountHistory],
       };
@@ -116,13 +101,24 @@ export class StockProcessor {
 
       // 남은 주식 업데이트
       const updatedRemainingStocks = { ...remainingStocks };
-      updatedRemainingStocks[company] = remainingStocks[company] - amount;
+      if (updatedRemainingStocks[company] !== null) {
+        updatedRemainingStocks[company] -= amount;
+        if (updatedRemainingStocks[company] < 0) {
+          updatedRemainingStocks[company] = 0;
+        }
+      }
+
+      const moneyHistory = [...user.moneyHistory];
+      for (let i = idx; i < moneyHistory.length; i++) {
+        moneyHistory[i] = user.money - totalPrice;
+      }
 
       await Promise.all([
         this.userRepository.updateOneWithAdd(
           { stockId, userId },
           {
             lastActivityTime: dayjs().toISOString(),
+            moneyHistory,
             stockStorages: updatedStockStorages,
           },
           {
@@ -140,26 +136,17 @@ export class StockProcessor {
         this.stockRepository.updateOne(stockId, { remainingStocks: updatedRemainingStocks }),
       ]);
 
-      // 로그 상태 업데이트
-      await this.logService.updateOne({ queueId: attributes?.queueMessageId }, { date: new Date(), status: 'SUCCESS' });
-
       return {
         message: `주식을 ${amount}주 구매하였습니다.`,
         status: 200,
       };
     } catch (error) {
       console.error(error);
-      await this.logService.updateOne(
-        { queueId: attributes?.queueMessageId },
-        { failedReason: error instanceof Error ? error.message : `${error}`, status: 'FAILED' },
-      );
 
       return {
         message: `${error instanceof Error ? error.message : `${error}`}`,
         status: 500,
       };
-    } finally {
-      this.logService.deleteOldStatusLogs().catch(console.error);
     }
   }
 
@@ -195,7 +182,6 @@ export class StockProcessor {
 
       const { companies, remainingStocks } = stock;
       const companyInfo = companies[company];
-      const remainingCompanyStock = remainingStocks[company];
 
       if (!companyInfo) {
         throw new HttpException('회사 정보를 불러올 수 없습니다', HttpStatus.CONFLICT);
@@ -238,10 +224,16 @@ export class StockProcessor {
       // 평균 단가 업데이트 - 판매 후 보유 수량이 0이 되면 0으로 초기화, 보유 시 평균 단가 유지
       const stockAveragePrice = companyCount <= amount ? 0 : stockStorage.stockAveragePrice;
 
+      const stockAveragePriceHistory = [...stockStorage.stockAveragePriceHistory];
+      for (let i = idx; i < stockAveragePriceHistory.length; i++) {
+        stockAveragePriceHistory[i] = stockAveragePrice;
+      }
+
       // 주식 및 보유량 업데이트
       const updatedStockStorage = {
         ...stockStorage,
         stockAveragePrice,
+        stockAveragePriceHistory,
         stockCountCurrent: companyCount - amount,
         stockCountHistory: [...stockStorage.stockCountHistory],
       };
@@ -254,13 +246,21 @@ export class StockProcessor {
 
       // 남은 주식 업데이트
       const updatedRemainingStocks = { ...remainingStocks };
-      updatedRemainingStocks[company] = remainingCompanyStock + amount;
+      if (updatedRemainingStocks[company] !== null) {
+        updatedRemainingStocks[company] += amount;
+      }
+
+      const moneyHistory = [...user.moneyHistory];
+      for (let i = idx; i < moneyHistory.length; i++) {
+        moneyHistory[i] = user.money + totalPrice;
+      }
 
       await Promise.all([
         this.userRepository.updateOneWithAdd(
           { stockId, userId },
           {
             lastActivityTime: dayjs().toISOString(),
+            moneyHistory,
             stockStorages: updatedStockStorages,
           },
           {
@@ -278,25 +278,16 @@ export class StockProcessor {
         this.stockRepository.updateOne(stockId, { remainingStocks: updatedRemainingStocks }),
       ]);
 
-      // 로그 상태 업데이트
-      await this.logService.updateOne({ queueId: attributes?.queueMessageId }, { date: new Date(), status: 'SUCCESS' });
-
       return {
         message: `주식을 ${amount}주 판매하였습니다.`,
         status: 200,
       };
     } catch (error) {
       console.error(error);
-      await this.logService.updateOne(
-        { queueId: attributes?.queueMessageId },
-        { failedReason: error instanceof Error ? error.message : `${error}`, status: 'FAILED' },
-      );
       return {
         message: `${error instanceof Error ? error.message : `${error}`}`,
         status: 500,
       };
-    } finally {
-      this.logService.deleteOldStatusLogs().catch(console.error);
     }
   }
 }

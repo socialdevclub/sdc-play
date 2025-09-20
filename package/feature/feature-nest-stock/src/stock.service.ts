@@ -1,11 +1,10 @@
 import { HttpException, HttpStatus, Injectable, Inject, forwardRef } from '@nestjs/common';
-import type { CompanyInfo, Request, StockPhase, StockSchemaWithId } from 'shared~type-stock';
+import type { Request, StockPhase, StockSchema, StockSchemaWithId } from 'shared~type-stock';
 import { getDateDistance } from '@toss/date';
 import { ceilToUnit } from '@toss/utils';
 import dayjs from 'dayjs';
 import { StockConfig } from 'shared~config';
 import { UserService } from './user/user.service';
-import { LogService } from './log/log.service';
 import { StockRepository } from './stock.repository';
 import { UserRepository } from './user/user.repository';
 
@@ -17,7 +16,6 @@ export class StockService {
     private readonly userRepository: UserRepository,
     @Inject(forwardRef(() => UserService))
     private readonly userService: UserService,
-    private readonly logService: LogService,
   ) {}
 
   async find(): Promise<StockSchemaWithId[]> {
@@ -51,12 +49,6 @@ export class StockService {
         transactionInterval: 0,
       });
 
-      // 사용자 초기화
-      await this.userService.initializeUsers(stockId);
-
-      // 로그 삭제
-      await this.logService.deleteAllByStock(stockId);
-
       return stock;
     } catch (error) {
       console.error(error);
@@ -64,93 +56,176 @@ export class StockService {
     }
   }
 
-  async initStock(stockId: string): Promise<StockSchemaWithId | null> {
-    const players = await this.userService.getUserList(stockId);
+  async initStock(stockId: string, body: Request.PostStockInit): Promise<StockSchemaWithId | null> {
+    const { isCustomCompanies, companies, maxStockHintCount, maxMarketStockCount } = body;
 
-    const companyPriceChange: string[][] = [[]];
-    const newCompanies = {} as Record<StockConfig.CompanyNames, CompanyInfo[]>;
-    const playerIdxs = Array.from({ length: players.length }, (_, idx) => idx);
+    const stockNames = isCustomCompanies ? Object.keys(companies) : body.stockNames;
+    const newCompanies: StockSchema['companies'] = {};
+    const flatCompanies: { companyName: string; round: number; price: number; fluctuation: number }[] = [];
 
-    // 플레이어에게 줄 정보의 절반 개수
-    // 플레이어 수 00명 ~ 30명 : 3개 (*2 = 6개)
-    // 플레이어 수 31명 ~ 45명 : 2개 (*2 = 4개)
-    // 플레이어 수 46명 ~     : 1개 (*2 = 2개)
-    const halfInfoCount = Math.min(Math.max(Math.floor(90 / players.length), 1), 3);
+    // 주식표 정의
+    if (isCustomCompanies) {
+      Object.entries(companies).forEach(([company, value]) => {
+        newCompanies[company] = value.map((v) => ({
+          ...v,
+          정보: [],
+        }));
+      });
+    } else {
+      const defineCompany = ({
+        companyName,
+        round,
+        price,
+        fluctuation,
+      }: {
+        companyName: string;
+        round: number;
+        price: number;
+        fluctuation: number;
+      }): void => {
+        if (!newCompanies[companyName]) {
+          newCompanies[companyName] = [];
+        }
+        newCompanies[companyName][round] = {
+          가격: price,
+          정보: [],
+        };
+        flatCompanies.push({ companyName, fluctuation, price, round });
+      };
 
-    // 플레이어에게 줄 정보를 랜덤하게 주기 위한 배열
-    const randomPlayers = Array.from({ length: halfInfoCount }, (_, idx) => idx)
-      .map(() => playerIdxs)
-      .flat()
-      .sort(() => Math.random() - 0.5);
+      stockNames.forEach((company) => {
+        for (let round = 0; round <= StockConfig.MAX_STOCK_IDX; round++) {
+          if (round === 0) {
+            defineCompany({
+              companyName: company,
+              fluctuation: 0,
+              price: StockConfig.INIT_STOCK_PRICE,
+              round,
+            });
+            continue;
+          }
 
-    // 라운드 별 주가 변동 회사 선정
-    for (let round = 1; round < 10; round++) {
-      // 라운드당 (플레이어 수의 1/3) 만큼의 회사가 선정되며, 최대 10개로 제한됩니다 (전체 회사가 10개라서)
-      const companyCount = Math.ceil(players.length / 3);
-      const limitedCompanyCount = companyCount > 10 ? 10 : companyCount;
-      companyPriceChange[round] = [...StockConfig.getRandomCompanyNames(limitedCompanyCount)];
+          const prevPrice = newCompanies[company][round - 1].가격;
+
+          const calc1 = Math.floor(Math.random() * prevPrice - prevPrice / 2);
+          const calc2 = Math.floor(Math.random() * StockConfig.INIT_STOCK_PRICE - StockConfig.INIT_STOCK_PRICE / 2);
+
+          const frunc = Math.abs(calc1) >= Math.abs(calc2) ? calc1 : prevPrice + calc2 <= 0 ? calc1 : calc2;
+          const price = ceilToUnit(prevPrice + frunc, StockConfig.INIT_STOCK_PRICE / 1000);
+
+          defineCompany({
+            companyName: company,
+            fluctuation: frunc,
+            price,
+            round,
+          });
+        }
+      });
     }
 
-    // 라운드별 주식의 가격을 설정하고, 플레이어에게 정보 제공
-    StockConfig.getRandomCompanyNames().forEach((key) => {
-      const company = key as StockConfig.CompanyNames;
-      for (let round = 0; round < 10; round++) {
-        if (!newCompanies[company]) {
-          newCompanies[company] = [];
+    // 상승한 주식들을 변동폭이 작은 순서대로 정렬합니다.
+    const _upwardCompanies = flatCompanies
+      .filter((v) => v.fluctuation > 0)
+      .sort((a, b) => a.fluctuation - b.fluctuation);
+
+    // 하락한 주식들을 변동폭이 작은 순서대로 정렬합니다.
+    const _downwardCompanies = flatCompanies
+      .filter((v) => v.fluctuation < 0)
+      .sort((a, b) => b.fluctuation - a.fluctuation);
+
+    let upwardCompanies = [..._upwardCompanies];
+    let downwardCompanies = [..._downwardCompanies];
+
+    const players = await this.userService.getUserList(stockId);
+    const playerIds = players.map((v) => v.userId);
+
+    // 플레이어 목록을 먼저 랜덤으로 돌린다
+    // 플레이어 순서대로 +, -, +, -, ... 정보를 뽑는다
+    // 남은 힌트 없으면 반대 부호를 뽑는다. 다만, 반대 부호도 없으면 +, - 리스트를 새로 가져온다
+    // 힌트 개수는 1~30명은 6개, 31~45명은 4개, 46명 이상은 2개
+    const hintCount = Math.min(
+      Math.min(Math.max(Math.floor(90 / players.length), 1), 3) * 2,
+      maxStockHintCount ?? Infinity,
+    );
+
+    const randomPlayers = [...playerIds].sort(() => Math.random() - 0.5);
+    const hintPlayers: {
+      userId: string;
+      companyName: string;
+      round: number;
+      fluctuation: number;
+    }[] = [];
+
+    const pushUpward = (userId: string): void => {
+      const upwardCompany = upwardCompanies.shift();
+      hintPlayers.push({
+        companyName: upwardCompany.companyName,
+        fluctuation: upwardCompany.fluctuation,
+        round: upwardCompany.round,
+        userId,
+      });
+    };
+
+    const pushDownward = (userId: string): void => {
+      const downwardCompany = downwardCompanies.shift();
+      hintPlayers.push({
+        companyName: downwardCompany.companyName,
+        fluctuation: downwardCompany.fluctuation,
+        round: downwardCompany.round,
+        userId,
+      });
+    };
+
+    for (let _ = 0; _ < hintCount; _++) {
+      for (const userId of randomPlayers) {
+        const hintPlayer = hintPlayers.filter((v) => v.userId === userId);
+        const upwardCount = hintPlayer.filter((v) => v.fluctuation > 0).length;
+        const downwardCount = hintPlayer.filter((v) => v.fluctuation < 0).length;
+
+        if (upwardCompanies.length === 0 && downwardCompanies.length === 0) {
+          upwardCompanies = [..._upwardCompanies];
+          downwardCompanies = [..._downwardCompanies];
         }
 
-        if (round === 0) {
-          newCompanies[company][0] = {
-            가격: StockConfig.INIT_STOCK_PRICE,
-            정보: [],
-          };
-          continue;
-        }
-
-        const isChangePrice = companyPriceChange[round].some((v) => v === key);
-        const prevPrice = newCompanies[company][round - 1].가격;
-
-        const calc1 = Math.floor(Math.random() * prevPrice - prevPrice / 2);
-        const calc2 = Math.floor(Math.random() * StockConfig.INIT_STOCK_PRICE - StockConfig.INIT_STOCK_PRICE / 2);
-
-        const frunc = Math.abs(calc1) >= Math.abs(calc2) ? calc1 : prevPrice + calc2 <= 0 ? calc1 : calc2;
-        const price = ceilToUnit(prevPrice + frunc, 100);
-        const info = [];
-
-        // 주가 변동 회사일 경우, 플레이어 2명에게 정보 제공
-        if (isChangePrice) {
-          const infoPlayerIdx = randomPlayers.pop();
-          if (infoPlayerIdx !== undefined) {
-            const partnerPlayerIdx = (infoPlayerIdx + 1) % players.length;
-            info.push(players[infoPlayerIdx].userId, players[partnerPlayerIdx].userId);
+        if (upwardCount <= downwardCount) {
+          if (upwardCompanies.length > 0) {
+            pushUpward(userId);
+          } else if (downwardCompanies.length > 0) {
+            pushDownward(userId);
           }
+        } else if (downwardCompanies.length > 0) {
+          pushDownward(userId);
+        } else if (upwardCompanies.length > 0) {
+          pushUpward(userId);
         }
-
-        newCompanies[company][round] = {
-          가격: price,
-          정보: info,
-        };
       }
-    });
+    }
 
-    // 회사 별 주식 재고 설정
+    // 힌트 주입하기
+    console.log('🚀 ~ StockService ~ initStock ~ hintPlayers:', hintPlayers);
+    for (const hint of hintPlayers) {
+      const { userId, companyName, round } = hint;
+
+      const { 정보 } = newCompanies[companyName][round];
+      if (!정보.some((v) => v === userId)) {
+        정보.push(userId);
+      }
+    }
+
+    // 주식 재고 주입하기
     const remainingStocks = {};
     Object.keys(newCompanies).forEach((company) => {
-      remainingStocks[company] = players.length * 3;
+      remainingStocks[company] = maxMarketStockCount;
     });
-
-    // DynamoDB 업데이트
-    await this.logService.deleteAllByStock(stockId);
 
     return this.stockRepository.findOneAndUpdate(stockId, {
       companies: newCompanies,
-      fluctuationsInterval: 5,
       isTransaction: false,
       isVisibleRank: false,
+      maxStockHintCount,
       remainingStocks,
       startedTime: dayjs().toISOString(),
       stockPhase: 'PLAYING',
-      transactionInterval: 0,
     });
   }
 
@@ -333,7 +408,6 @@ export class StockService {
   async deleteStock(stockId: string): Promise<boolean> {
     try {
       // 관련된 데이터 모두 삭제
-      await this.logService.deleteAllByStock(stockId);
       await this.userService.removeAllUser(stockId);
       await this.stockRepository.deleteMany({ _id: stockId });
 

@@ -1,7 +1,7 @@
 import { getDateDistance } from '@toss/date';
-import { objectEntries, objectValues } from '@toss/utils';
+import { objectEntries } from '@toss/utils';
 import dayjs from 'dayjs';
-import { COMPANY_NAMES, CompanyNames } from 'shared~config/dist/stock';
+import { CompanyInfo, StockStorageSchema } from 'shared~type-stock';
 import { GetStock } from 'shared~type-stock/Response';
 import {
   ANIMAL_NAME,
@@ -52,6 +52,10 @@ export function calculateProfitRate(currentPrice: number, averagePrice: number):
 
   return Math.round(profitRate * 10) / 10;
 }
+
+export const formatPercentage = (value: number): number => {
+  return Math.round(value * 100 * 10) / 10;
+};
 
 /**
  * 주식 정보 메시지 타입
@@ -156,37 +160,6 @@ export const calculateAveragePurchasePrice = (params: CalculateAveragePurchasePr
   return currentQuantity === 0 ? 0 : Math.round(평균매입가격 / currentQuantity);
 };
 
-export const renderProfitBadge = (
-  stockProfitRate: number | null,
-): { backgroundColor: string; color: string; text: string } => {
-  if (stockProfitRate === null) {
-    return {
-      backgroundColor: 'rgba(148, 163, 184, 0.2)',
-      color: '#94A3B8',
-      text: '해당 주식이 없어요',
-    };
-  }
-  if (stockProfitRate > 0) {
-    return {
-      backgroundColor: 'rgba(163, 230, 53, 0.2)',
-      color: '#a3e635',
-      text: `+${stockProfitRate}% 수익 중`,
-    };
-  }
-  if (stockProfitRate < 0) {
-    return {
-      backgroundColor: 'rgba(220, 38, 38, 0.2)',
-      color: '#DC2626',
-      text: `${stockProfitRate}% 손실 중`,
-    };
-  }
-  return {
-    backgroundColor: 'rgba(148, 163, 184, 0.2)',
-    color: '#94A3B8',
-    text: '0% 변동 없음',
-  };
-};
-
 export const renderStockChangesInfo = (
   selectedCompany: string,
   stock: GetStock,
@@ -228,11 +201,11 @@ export const renderStockChangesInfo = (
 
 export const getAnimalImageSource = (companyName: string): string => {
   // 입력된 회사 이름이 유효한 CompanyNames 타입인지 확인
-  const isValidCompanyName = objectValues(COMPANY_NAMES).includes(companyName as CompanyNames);
+  const isValidCompanyName = Object.keys(ANIMAL_NAME).some((v) => v === companyName);
 
   if (isValidCompanyName) {
     // 유효한 회사 이름이면 해당 동물 이미지 URL 반환
-    return `/no_bg_animal/${ANIMAL_NAME[companyName.slice(0, 4)]}.webp`;
+    return `/no_bg_animal/${ANIMAL_NAME[companyName]}.webp`;
   }
   // 유효하지 않은 회사 이름이면 기본값으로 햄찌금융 이미지 반환
   return `/no_bg_animal/${ANIMAL_NAME['햄찌금융']}.webp`;
@@ -253,4 +226,43 @@ export const secondsToMMSS = (seconds: number): string => {
   const formattedSeconds = String(remainingSeconds).padStart(2, '0');
 
   return `${formattedMinutes}:${formattedSeconds}`;
+};
+
+export type CompanyName = string;
+
+export interface StockValue {
+  investmentPrice: number;
+  stockCount: number;
+  stockPrice: number;
+  profitRate: number;
+}
+
+export const calculateCurrentPortfolio = ({
+  stockStorages,
+  companies,
+  timeIdx,
+}: {
+  stockStorages: StockStorageSchema[];
+  companies: Record<string, CompanyInfo[]>;
+  timeIdx: number;
+}): Record<CompanyName, StockValue> => {
+  const portfolio: Record<CompanyName, StockValue> = {};
+
+  stockStorages.forEach((storage) => {
+    const { companyName, stockCountCurrent, stockAveragePrice } = storage;
+
+    const stockCurrentPrice = companies[companyName][timeIdx].가격;
+    const investmentPrice = Math.round(stockCountCurrent * stockAveragePrice);
+    const stockPrice = Math.round(stockCountCurrent * stockCurrentPrice);
+    const profitRate = formatPercentage((stockPrice - investmentPrice) / investmentPrice);
+
+    portfolio[companyName] = {
+      investmentPrice,
+      profitRate,
+      stockCount: stockCountCurrent,
+      stockPrice,
+    };
+  });
+
+  return portfolio;
 };

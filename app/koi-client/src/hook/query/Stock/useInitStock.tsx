@@ -1,9 +1,9 @@
 import { useMutation } from 'lib-react-query';
-import { Response } from 'shared~type-stock';
+import { Request, Response } from 'shared~type-stock';
 import { serverApiUrl } from '../../../config/baseUrl';
 
 const useInitStock = (stockId: string | undefined) => {
-  return useMutation<object, Response.Stock>({
+  return useMutation<Request.PostStockInit, Response.Stock>({
     api: {
       hostname: serverApiUrl,
       method: 'POST',

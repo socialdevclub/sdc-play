@@ -1,5 +1,5 @@
 import React from 'react';
-import { RouterProvider, createBrowserRouter, redirect } from 'react-router-dom';
+import { RouterProvider, createBrowserRouter } from 'react-router-dom';
 import { ConfigProvider } from 'antd';
 import { QueryClientProvider } from 'lib-react-query';
 import { useAtom } from 'jotai';
@@ -16,7 +16,6 @@ import BackofficeStock from './page/@backoffice@stock';
 import BackofficeScreen from './page/@backoffice@screen@[partyId]';
 import BackofficeStockDetail from './page/@backoffice@stock@[stockId]';
 import BackofficePartyDetailPage from './page/@backoffice@party@[partyId]';
-import { LOCAL_STORAGE_KEY } from './config/localStorage';
 
 const router = createBrowserRouter([
   {
@@ -24,15 +23,6 @@ const router = createBrowserRouter([
     // 폴더 명이 @rooms@search 로 되어있는데, @로 추후 변경 예정입니다.
     // 히스토리가 변경되어 임시로 @rooms@search 로 진행하였습니다.
     element: <RoomsSearch />,
-    loader: () => {
-      const lastPartyId = localStorage.getItem(LOCAL_STORAGE_KEY);
-
-      if (lastPartyId) {
-        return redirect(`/party/${lastPartyId}`);
-      }
-
-      return null;
-    },
     path: '/',
   },
   {

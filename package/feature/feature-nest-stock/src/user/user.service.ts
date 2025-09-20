@@ -218,9 +218,9 @@ ${JSON.stringify(userData)}`;
     return this.userRepository.deleteMany({ stockId });
   }
 
-  initializeUsers(stockId: string): Promise<boolean> {
-    console.debug('initializeUsers');
-    return this.userRepository.initializeUsers(stockId);
+  async initializeUsers(stockId: string): Promise<boolean> {
+    const stock = await this.stockRepository.findOneById(stockId);
+    return this.userRepository.initializeUsers(stock);
   }
 
   async startLoan(stockId: string, userId: string): Promise<Response.Common> {

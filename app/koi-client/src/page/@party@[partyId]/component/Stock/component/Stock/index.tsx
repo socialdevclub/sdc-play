@@ -1,6 +1,6 @@
 import styled from '@emotion/styled';
 import { SwitchCase } from '@toss/react';
-import { Suspense, useCallback, useEffect, useRef } from 'react';
+import { Suspense, useCallback, useEffect, useMemo, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { message } from 'antd';
 import dayjs from 'dayjs';
@@ -8,6 +8,7 @@ import Home from './Home/Home';
 import Information from './Information';
 import { Tabs, type TabsProps } from './Tabs';
 import StockInfoList from './StockInfoList.tsx';
+import Portfolio from './Portfolio/index.tsx';
 import { Query } from '../../../../../../hook';
 
 const items: TabsProps['items'] = [
@@ -22,6 +23,10 @@ const items: TabsProps['items'] = [
   {
     key: '주식',
     label: '주식',
+  },
+  {
+    key: '포트폴리오',
+    label: '포트폴리오',
   },
 ];
 
@@ -89,6 +94,9 @@ const Stock = ({ stockId }: Props) => {
         case '주식':
           setSearchParams({ page: '주식' }, { replace: true });
           break;
+        case '포트폴리오':
+          setSearchParams({ page: '포트폴리오' }, { replace: true });
+          break;
         default:
           setSearchParams({ page: '홈' }, { replace: true });
           break;
@@ -97,9 +105,14 @@ const Stock = ({ stockId }: Props) => {
     [setSearchParams],
   );
 
+  const tabItems = useMemo(
+    () => (stock?.maxStockHintCount === 0 ? items.filter((item) => item.key !== '정보') : items),
+    [stock?.maxStockHintCount],
+  );
+
   return (
     <Container ref={contentRef}>
-      <Tabs defaultActiveKey={searchParams.get('page') ?? '홈'} items={items} onChange={onClickTab} />
+      <Tabs defaultActiveKey={searchParams.get('page') ?? '홈'} items={tabItems} onChange={onClickTab} />
       <ContentContainer>
         <Suspense fallback={<></>}>
           {contextHolder}
@@ -109,6 +122,7 @@ const Stock = ({ stockId }: Props) => {
               // 룰: <Rule stockId={stockId} />,
               정보: <Information stockId={stockId} messageApi={messageApi} />,
               주식: <StockInfoList stockId={stockId} messageApi={messageApi} />,
+              포트폴리오: <Portfolio stockId={stockId} messageApi={messageApi} />,
               홈: <Home stockId={stockId} messageApi={messageApi} />,
             }}
             defaultComponent={<Home stockId={stockId} messageApi={messageApi} />}

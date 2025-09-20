@@ -10,7 +10,7 @@ export const COMPANY_NAMES = {
   '햄찌금융🐹': '햄찌금융🐹',
   '호랑전자🐯': '호랑전자🐯',
 } as const;
-export type CompanyNames = (typeof COMPANY_NAMES)[keyof typeof COMPANY_NAMES];
+export type CompanyNames = string;
 
 /**
  * 랜덤하게 회사 이름을 선택하여 반환하는 함수
@@ -24,24 +24,7 @@ export const getRandomCompanyNames = (length?: number): string[] => {
   return result;
 };
 
-/**
- * 주식 보유 한도 초과 여부를 확인하는 함수
- * @param playerLength 플레이어 수
- * @param currentStockCount 현재 보유 주식 수
- * @param willBuyStockAmount 구매할 주식 수
- * @returns 주식 보유 한도 초과 여부
- */
-export const isStockOverLimit = (
-  playerLength: number,
-  currentStockCount: number,
-  willBuyStockAmount: number,
-): boolean => {
-  const maxStockCount = playerLength;
-  return currentStockCount + willBuyStockAmount > maxStockCount;
-};
-
 export const INIT_STOCK_PRICE = 100000;
-export const INIT_USER_MONEY = 1_000_000;
 
 export const LOAN_PRICE = 1_000_000;
 export const BOUNDARY_LOAN_PRICE = 1_000_000;

@@ -23,14 +23,24 @@ export const STOCK_TRADE_STATUS = {
 export type StockTradeStatus = (typeof STOCK_TRADE_STATUS)[keyof typeof STOCK_TRADE_STATUS];
 
 export const ANIMAL_NAME: Record<string, string> = {
+  QQQ: 'qqq',
+  'S&P500': 'snp500',
+  TDF2060: 'tdf',
   고양기획: 'cat',
+  금: 'gold',
   꿀벌생명: 'honeyBee',
   늑대통신: 'wolf',
   멍멍제과: 'dog',
+  미국달러SOFR: 'sofr',
+  비트코인: 'bitcoin',
   수달물산: 'otter',
   여우은행: 'fox',
   용용카드: 'dragon',
+  '원화 CMA': 'cma',
+  채권: 'bonds',
+  코스피: 'kospi',
   토끼건설: 'rabbit',
+  해삐코인: 'happycoin',
   햄찌금융: 'hamster',
   호랑전자: 'tiger',
 };

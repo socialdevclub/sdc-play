@@ -16,6 +16,10 @@ export type StockStorageSchema = {
   companyName: string;
   stockCountCurrent: number;
   stockAveragePrice: number;
+  /**
+   * idx별로 가장 마지막에 거래한 것을 기준으로 평균 주가를 저장합니다.
+   */
+  stockAveragePriceHistory: number[];
   stockCountHistory: number[];
 };
 
@@ -25,6 +29,7 @@ export type StockUserSchema = {
   userInfo: StockUserInfoSchema;
   index: number;
   money: number;
+  moneyHistory: number[];
   lastActivityTime: string;
   loanCount: number;
   stockStorages: StockStorageSchema[];
@@ -45,6 +50,12 @@ export type CompanyInfo = {
   가격: number;
   정보: string[];
 };
+
+const StockGameMode = {
+  REALISM: 'realism',
+  STOCK: 'stock',
+} as const;
+export type StockGameMode = (typeof StockGameMode)[keyof typeof StockGameMode];
 
 export type StockSchema = {
   _id: string;
@@ -68,6 +79,34 @@ export type StockSchema = {
    * 2라운드 - 본선게임
    */
   round: number;
+  initialMoney: number;
+  hasLoan: boolean;
+  /**
+   * 최대 주식 힌트 개수
+   *
+   * 백엔드에서는 무한개를 `null`로 관리합니다.
+   */
+  maxStockHintCount: number;
+  /**
+   * 최대 개인 보유 주식 개수
+   *
+   * 백엔드에서는 무한개를 `null`로 관리합니다.
+   */
+  maxPersonalStockCount: number;
+  /**
+   * 최대 시장 주식 개수
+   *
+   * 백엔드에서는 무한개를 `null`로 관리합니다.
+   */
+  maxMarketStockCount: number;
+
+  /**
+   * 게임 모드
+   *
+   * 게임 모드는 백엔드에서 정의한 문자열로 관리합니다.
+   * 예시: 'realism', 'stock', 'custom'
+   */
+  gameMode: StockGameMode;
 };
 export type StockSchemaWithId = StockSchema;
 

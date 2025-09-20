@@ -10,12 +10,18 @@ interface Props {
 }
 
 const SupabaseProvider = ({ noSessionComponent, supabaseSession, setSupabaseSession, children }: Props) => {
+  const [isRender, setIsRender] = useState(false);
   const [isShouldPasswordRecovery, setIsShouldPasswordRecovery] = useState(false);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSupabaseSession(session);
-    });
+    supabase.auth
+      .getSession()
+      .then(({ data: { session } }) => {
+        setSupabaseSession(session);
+      })
+      .finally(() => {
+        setIsRender(true);
+      });
 
     const {
       data: { subscription },
@@ -28,6 +34,10 @@ const SupabaseProvider = ({ noSessionComponent, supabaseSession, setSupabaseSess
 
     return () => subscription.unsubscribe();
   }, [setSupabaseSession]);
+
+  if (!isRender) {
+    return <></>;
+  }
 
   if (noSessionComponent && (!supabaseSession || isShouldPasswordRecovery)) {
     return <>{noSessionComponent}</>;

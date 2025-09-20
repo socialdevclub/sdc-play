@@ -3,6 +3,7 @@ import { Query } from '../../../hook';
 
 interface Props {
   messageApi: MessageInstance;
+  refetchUser: () => void;
 }
 
 interface ReturnType {
@@ -38,7 +39,7 @@ interface SellStockProps {
  * @param stockStorages 현재 내가 가진 주식들에 대한 정보
  * @param messageApi 메시지 API
  */
-export const useTradeStock = ({ messageApi }: Props): ReturnType => {
+export const useTradeStock = ({ messageApi, refetchUser }: Props): ReturnType => {
   const { mutateAsync: buyStock, isLoading: isBuyLoading } = Query.Stock.useBuyStock();
   const { mutateAsync: sellStock, isLoading: isSellLoading } = Query.Stock.useSellStock();
 
@@ -52,6 +53,7 @@ export const useTradeStock = ({ messageApi }: Props): ReturnType => {
     callback,
   }: BuyStockProps): Promise<void> => {
     const { status, message } = await buyStock({ amount, company, round, stockId, unitPrice, userId });
+    refetchUser();
 
     const isSuccess = status === 200;
     const isFailed = status >= 400;
@@ -78,6 +80,7 @@ export const useTradeStock = ({ messageApi }: Props): ReturnType => {
     callback,
   }: SellStockProps): Promise<void> => {
     const { status, message } = await sellStock({ amount, company, round, stockId, unitPrice, userId });
+    refetchUser();
 
     const isSuccess = status === 200;
     const isFailed = status >= 400;

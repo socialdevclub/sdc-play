@@ -5,7 +5,7 @@ import useRoundTimeRaceCheck from '../../../../../../../../hook/useRoundTimeRace
 import { useQueryParty } from '../../../../../../../../hook/query/Party'; // 경로 확인 필요
 import { useQueryStock } from '../../../../../../../../hook/query/Stock'; // 경로 확인 필요
 import Card from '../../../../../../../../component-presentation/Card.tsx'; // 경로 확인 필요
-import { secondsToMMSS } from '../../../../../../../../utils/stock.ts'; // 경로 확인 필요
+import { secondsToMMSS, formatPercentage } from '../../../../../../../../utils/stock.ts'; // 경로 확인 필요
 import * as COLOR from '../../../../../../../../config/color.ts'; // 경로 확인 필요
 
 const TimeIndicator = () => {
@@ -58,7 +58,7 @@ function ProgressBar({ roundTime, totalElapsedTime, currentRound, totalRounds }:
     const clampedTotalElapsedTime = Math.min(totalElapsedTime, totalTime);
 
     // 진행률 계산 및 소수점 첫째 자리까지 반올림
-    return Math.round((clampedTotalElapsedTime / totalTime) * 100 * 10) / 10;
+    return formatPercentage(clampedTotalElapsedTime / totalTime);
   }, [roundTime, totalElapsedTime, totalRounds]);
 
   return (

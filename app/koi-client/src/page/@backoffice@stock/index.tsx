@@ -1,5 +1,12 @@
 import React from 'react';
-import { ColumnDef, createColumnHelper, flexRender, getCoreRowModel, useReactTable } from '@tanstack/react-table';
+import {
+  ColumnDef,
+  createColumnHelper,
+  flexRender,
+  getCoreRowModel,
+  getSortedRowModel,
+  useReactTable,
+} from '@tanstack/react-table';
 import { css } from '@linaria/core';
 import { StockSchemaWithId } from 'shared~type-stock';
 import RemoveStockSessionButton from '../../component/RemoveStockSessionButton';
@@ -24,11 +31,26 @@ const columns = [
         '🔵'
       );
     },
+    enableSorting: false,
     header: () => null,
     id: 'expander',
   },
   columnHelper.accessor('_id', {
     cell: (v) => v.getValue(),
+  }),
+  columnHelper.accessor('startedTime', {
+    cell: (v) => v.getValue(),
+    header: ({ column }) => {
+      return (
+        <button className={cssSortButton} onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}>
+          시작 시간
+          {{
+            asc: ' 🔼',
+            desc: ' 🔽',
+          }[column.getIsSorted() as string] ?? null}
+        </button>
+      );
+    },
   }),
   columnHelper.accessor('stockPhase', {
     cell: (v) => v.getValue(),
@@ -52,6 +74,7 @@ const columns = [
     cell: ({ row }) => {
       return <RemoveStockSessionButton stockId={row.original._id} />;
     },
+    enableSorting: false,
     header: () => null,
     id: 'remove',
   },
@@ -65,6 +88,15 @@ const BackofficeStock = () => {
     data,
     getCoreRowModel: getCoreRowModel(),
     getRowCanExpand: () => true,
+    getSortedRowModel: getSortedRowModel(),
+    initialState: {
+      sorting: [
+        {
+          desc: true,
+          id: 'startedTime',
+        },
+      ],
+    },
   });
 
   if (!data) return <></>;
@@ -141,6 +173,19 @@ const cssTh = css`
   font-weight: bold;
   text-align: center;
   height: 30px;
+`;
+
+const cssSortButton = css`
+  background: none;
+  border: none;
+  font-weight: bold;
+  cursor: pointer;
+  padding: 0;
+  font-size: inherit;
+
+  &:hover {
+    text-decoration: underline;
+  }
 `;
 
 export default BackofficeStock;

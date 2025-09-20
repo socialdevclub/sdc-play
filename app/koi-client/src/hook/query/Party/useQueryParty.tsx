@@ -2,8 +2,11 @@ import { useQuery } from 'lib-react-query';
 import { PartySchemaWithId } from 'shared~type-party';
 import { serverApiUrl } from '../../../config/baseUrl';
 
-const useQueryParty = (partyId: string | undefined) => {
-  const { data } = useQuery<PartySchemaWithId>({
+const useQueryParty = (
+  partyId: string | undefined,
+  options: Parameters<typeof useQuery<PartySchemaWithId>>[0]['reactQueryOption'] = {},
+) => {
+  const { data, error } = useQuery<PartySchemaWithId>({
     api: {
       hostname: serverApiUrl,
       method: 'GET',
@@ -12,10 +15,15 @@ const useQueryParty = (partyId: string | undefined) => {
     reactQueryOption: {
       enabled: !!partyId,
       refetchInterval: 1500,
+      ...options,
     },
   });
 
-  return { data };
+  if (data && 'statusCode' in data && 'message' in data) {
+    return { data: undefined, error: data };
+  }
+
+  return { data, error };
 };
 
 export default useQueryParty;

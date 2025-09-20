@@ -10,6 +10,7 @@ interface UserListProps {
 }
 
 const UserList: React.FC<UserListProps> = ({ stockId }) => {
+  const { data: stock } = Query.Stock.useQueryStock(stockId);
   const { data: users } = Query.Stock.useUserList(stockId);
   const { data: profiles } = Query.Supabase.useQueryProfileById(users?.map((v) => v.userId) ?? []);
 
@@ -47,6 +48,7 @@ const UserList: React.FC<UserListProps> = ({ stockId }) => {
             const profileData = profile.data[0];
 
             mutateRegisterUser({
+              companyNames: Object.keys(stock?.companies ?? {}),
               stockId,
               stockStorages: [],
               userId: profileData.id,

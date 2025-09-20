@@ -9,7 +9,7 @@ import {
   ScanCommand,
 } from '@aws-sdk/lib-dynamodb';
 import { StockConfig } from 'shared~config';
-import { StockStorageSchema, StockUserSchema } from 'shared~type-stock';
+import { Request, StockSchema, StockStorageSchema, StockUserSchema } from 'shared~type-stock';
 import dayjs from 'dayjs';
 import { StockUser } from './user.schema';
 
@@ -22,13 +22,13 @@ export class UserRepository {
     private readonly dynamoDBClient: DynamoDBDocumentClient,
   ) {}
 
-  async create(user: StockUser): Promise<void> {
+  async create(user: Request.PostCreateUser): Promise<void> {
     try {
       // DynamoDB에서는 트랜잭션을 별도로 처리
       const existingUser = await this.findOne({ stockId: user.stockId, userId: user.userId });
 
       if (!existingUser) {
-        const newStockUser = new StockUser(user, user);
+        const newStockUser = new StockUser(user, user, user.companyNames);
 
         const command = new PutCommand({
           Item: newStockUser,
@@ -272,25 +272,26 @@ export class UserRepository {
     }
   }
 
-  async initializeUsers(stockId: string): Promise<boolean> {
+  async initializeUsers(stock: StockSchema): Promise<boolean> {
     try {
-      const companies = StockConfig.getRandomCompanyNames();
+      const companies = Object.keys(stock.companies);
       const stockStorages = companies.map((company) => {
         return {
           companyName: company,
           stockAveragePrice: 0,
+          stockAveragePriceHistory: new Array(StockConfig.MAX_STOCK_IDX + 1).fill(0),
           stockCountCurrent: 0,
           stockCountHistory: new Array(StockConfig.MAX_STOCK_IDX + 1).fill(0),
         } as StockStorageSchema;
       });
 
-      const users = await this.find({ stockId });
+      const users = await this.find({ stockId: stock._id });
       const updatePromises = users.map((user) => {
         return this.findOneAndUpdate(
           { stockId: user.stockId, userId: user.userId },
           {
             lastActivityTime: dayjs().toISOString(),
-            money: StockConfig.INIT_USER_MONEY,
+            money: stock.initialMoney,
             resultByRound: [...(user.resultByRound ?? [])],
             stockStorages,
           },

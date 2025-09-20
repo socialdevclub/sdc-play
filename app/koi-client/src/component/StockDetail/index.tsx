@@ -1,9 +1,7 @@
 import styled from '@emotion/styled';
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useInterval } from '@toss/react';
-import { objectKeys } from '@toss/utils';
 import { getDateDistance } from '@toss/date';
-import { StockConfig } from 'shared~config';
 import dayjs from 'dayjs';
 import { Query } from '../../hook';
 import type { POV } from '../../type';
@@ -28,12 +26,8 @@ export default function StockDetail({ stockId }: Props) {
   const { data: users } = Query.Stock.useUserList(stockId);
   const { data: stock } = Query.Stock.useQueryStock(stockId);
 
-  // 주식 가치 계산을 위한 훅 추가
-  const { allUserSellPriceDesc } = Query.Stock.useAllUserSellPriceDesc(stockId);
-  const isAllSellPriceZero = allUserSellPriceDesc().every((v) => v.allSellPrice === 0);
-
   const companies = stock?.companies ?? {};
-  const companyNames = objectKeys(companies).length > 0 ? objectKeys(companies) : StockConfig.getRandomCompanyNames();
+  const companyNames = Object.keys(stock?.companies ?? {});
   const startedTime = dayjs(stock?.startedTime).toDate();
   const currentPriceIdx = Math.floor(
     getDateDistance(startedTime, new Date()).minutes / (stock?.fluctuationsInterval ?? 5),
@@ -286,7 +280,23 @@ export default function StockDetail({ stockId }: Props) {
                 </ControlButton>
                 <ControlButton
                   onClick={() => {
-                    mutateInitStock({});
+                    mutateInitStock({
+                      isCustomCompanies: false,
+                      maxMarketStockCount: Infinity,
+                      maxStockHintCount: Infinity,
+                      stockNames: [
+                        '고양기획',
+                        '꿀벌생명',
+                        '늑대통신',
+                        '멍멍제과',
+                        '수달물산',
+                        '여우은행',
+                        '용용카드',
+                        '토끼건설',
+                        '햄찌금융',
+                        '호랑전자',
+                      ],
+                    });
                   }}
                   color="warning"
                 >

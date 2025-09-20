@@ -1,17 +1,21 @@
 import styled from '@emotion/styled';
 import { Suspense, useEffect, useState } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
-import { PartySchemaWithId } from 'shared~type-party';
 import { useSetAtom } from 'jotai';
+import { useHydrateAtoms } from 'jotai/utils';
 import Waiting from './component/Waiting';
 import Phase from './component/Phase';
 import { UiStore } from '../../../../store';
+import { StockStore } from './store';
 
 interface Props {
-  party: PartySchemaWithId;
+  partyId: string;
+  stockId: string;
 }
 
-export default function Stock({ party }: Props) {
+export default function Stock({ partyId, stockId }: Props) {
+  useHydrateAtoms([[StockStore.partyId, partyId]]);
+
   const [resetKey, setResetKey] = useState(new Date()); // ErrorBoundary를 초기화하기 위한 키
   const setBackgroundColor = useSetAtom(UiStore.backgroundColor);
   const setPadding = useSetAtom(UiStore.padding);
@@ -24,10 +28,6 @@ export default function Stock({ party }: Props) {
       setPadding(undefined);
     };
   }, [setBackgroundColor, setPadding]);
-
-  if (!party.activityName) {
-    return <></>;
-  }
 
   return (
     <Container>
@@ -48,7 +48,7 @@ export default function Stock({ party }: Props) {
             </Suspense>
           }
         >
-          <Phase stockId={party.activityName} />
+          <Phase stockId={stockId} />
         </Suspense>
       </ErrorBoundary>
     </Container>

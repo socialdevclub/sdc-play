@@ -8,7 +8,7 @@ import useStockChanges from '../../../../../../hook/query/Stock/useStockChange.t
 import { getAnimalImageSource, getStockMessages } from '../../../../../../utils/stock.ts';
 import { useQueryStock } from '../../../../../../hook/query/Stock';
 import { UserStore } from '../../../../../../store';
-import StockDrawer from './StockDrawer.tsx';
+import StockDrawer from './StockDrawer/index.tsx';
 
 interface Props {
   stockId: string;
@@ -79,7 +79,7 @@ const StockInfoList = ({ stockId, messageApi }: Props) => {
               <Flex style={{ alignItems: 'center', columnGap: 16, flexDirection: 'row' }}>
                 <img src={getAnimalImageSource(stock.companyName)} alt={stock.companyName} width={50} />
                 <Flex style={{ gap: 10 }}>
-                  <CompanyName>{stock.companyName.slice(0, 4)}</CompanyName>
+                  <CompanyName>{stock.companyName}</CompanyName>
                   <FlexRowStart>
                     {stock.priceChange >= 0 ? (
                       <PriceTrend>

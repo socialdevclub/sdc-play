@@ -1,8 +1,7 @@
 import styled from '@emotion/styled';
-import { objectEntries, objectValues } from '@toss/utils';
+import { objectEntries } from '@toss/utils';
 import { useAtomValue } from 'jotai';
 import { useMemo, useState } from 'react';
-import { COMPANY_NAMES } from 'shared~config/dist/stock';
 import { MessageInstance } from 'antd/es/message/interface';
 import StockCard from '../../../../../../component-presentation/StockCard';
 import { Query } from '../../../../../../hook';
@@ -12,10 +11,11 @@ import StockDrawer from './StockDrawer';
 
 interface Props {
   stockId: string;
+  stockNames: string[];
   messageApi: MessageInstance;
 }
 
-const StockList = ({ stockId, messageApi }: Props) => {
+const StockList = ({ stockId, stockNames, messageApi }: Props) => {
   const supabaseSession = useAtomValue(UserStore.supabaseSession);
   const userId = supabaseSession?.user.id;
 
@@ -45,8 +45,8 @@ const StockList = ({ stockId, messageApi }: Props) => {
   }, [user?.stockStorages]);
 
   const 미보유주식 = useMemo(() => {
-    return objectValues(COMPANY_NAMES).filter((company) => !보유주식.some(({ company: c }) => c === company));
-  }, [보유주식]);
+    return stockNames.filter((company) => !보유주식.some(({ company: c }) => c === company));
+  }, [stockNames, 보유주식]);
 
   if (!stock || !userId || !user) {
     return <>불러오는 중</>;

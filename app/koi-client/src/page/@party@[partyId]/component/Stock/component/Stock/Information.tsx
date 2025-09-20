@@ -36,10 +36,6 @@ const Information = ({ stockId, messageApi }: Props) => {
     return result;
   }, [stock?.companies]);
 
-  // const 미보유주식 = useMemo(() => {
-  //   return objectValues(COMPANY_NAMES).filter((company) => !보유주식.some(({ company: c }) => c === company));
-  // }, [보유주식]);
-
   if (!stock || !userId || !user) {
     return <>불러오는 중</>;
   }

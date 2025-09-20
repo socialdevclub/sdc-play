@@ -5,7 +5,7 @@ import { LEVEL_INFO, type LevelInfoType } from '../../../../../../../../config/l
 
 type Props = {
   moneyRatio: string | number;
-  initialMoney?: number;
+  initialMoney: number;
 };
 
 /**
@@ -63,7 +63,7 @@ const calculateRequiredMoney = (ratio: number, max: number, initialMoney: number
   return Math.max(0, targetMoney - currentMoney);
 };
 
-export const MyLevel = ({ moneyRatio, initialMoney = 1000000 }: Props) => {
+export const MyLevel = ({ moneyRatio, initialMoney }: Props) => {
   const percentage = parseRatio(moneyRatio);
   const levelInfo = getLevelByRatio(moneyRatio);
   const progress = calculateProgress(percentage, levelInfo.min, levelInfo.max);

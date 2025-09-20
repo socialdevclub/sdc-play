@@ -219,8 +219,8 @@ const Table = ({ elapsedTime, pov, stockId }: Props) => {
               {sortedUsers.map((user, i) => {
                 const stockValue = userStockValueMap[user.userId] || 0;
                 const totalValue = user.money + stockValue;
-                const profit = totalValue - 1000000; // 초기 자금(1백만) 대비 이익
-                const profitPercentage = ((profit / 1000000) * 100).toFixed(1);
+                const profit = totalValue - game.initialMoney; // 초기 자금 대비 이익
+                const profitPercentage = ((profit / game.initialMoney) * 100).toFixed(1);
 
                 return (
                   <StyledTr key={user.userId} isAlternate={i % 2 === 1}>

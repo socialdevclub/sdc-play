@@ -5,8 +5,6 @@ import { randomUUID } from 'crypto';
 import type { Stock } from './stock.schema';
 import { StockService } from './stock.service';
 import { StockProcessor } from './stock.processor';
-import { LogService } from './log/log.service';
-import { StockLog } from './log/log.schema';
 
 @Controller('stock')
 export class StockController {
@@ -14,7 +12,6 @@ export class StockController {
     private readonly stockService: StockService,
     private readonly httpService: HttpService,
     private readonly stockProcessor: StockProcessor,
-    private readonly logService: LogService,
   ) {}
 
   @Get()
@@ -65,42 +62,13 @@ export class StockController {
   }
 
   @Post('/init')
-  initStock(@Query('stockId') stockId: string): Promise<StockSchema> {
-    return this.stockService.initStock(stockId);
+  initStock(@Query('stockId') stockId: string, @Body() body: Request.PostStockInit): Promise<StockSchema> {
+    return this.stockService.initStock(stockId, body);
   }
 
   @Post('/buy')
   async buyStock(@Body() body: Request.PostBuyStock): Promise<Response.Common> {
     const queueUniqueId = randomUUID();
-
-    // SQS 관련 로직 (지금은 안씀)
-    if (false) {
-      await this.logService.addLog(
-        new StockLog({
-          action: 'BUY',
-          company: body.company,
-          date: new Date(),
-          price: body.unitPrice * body.amount,
-          quantity: body.amount,
-          queueId: queueUniqueId,
-          round: body.round,
-          status: 'QUEUING',
-          stockId: body.stockId,
-          userId: body.userId,
-        }),
-      );
-
-      return this.httpService.axiosRef
-        .post('https://api.socialdev.club/queue/stock/buy', { ...body, queueUniqueId })
-        .then(async (res) => {
-          return res.data;
-        })
-        .catch(async (error) => {
-          console.error(error);
-          await this.stockProcessor.buyStock(body.stockId, body, { queueMessageId: queueUniqueId });
-          return { messageId: 'direct' };
-        });
-    }
 
     const response = await this.stockProcessor.buyStock(body.stockId, body, { queueMessageId: queueUniqueId });
     return response;
@@ -114,35 +82,6 @@ export class StockController {
   @Post('/sell')
   async sellStock(@Body() body: Request.PostSellStock): Promise<Response.Common> {
     const queueUniqueId = randomUUID();
-
-    // SQS 관련 로직 (지금은 안씀)
-    if (false) {
-      await this.logService.addLog(
-        new StockLog({
-          action: 'SELL',
-          company: body.company,
-          date: new Date(),
-          price: body.unitPrice * body.amount,
-          quantity: body.amount,
-          queueId: queueUniqueId,
-          round: body.round,
-          status: 'QUEUING',
-          stockId: body.stockId,
-          userId: body.userId,
-        }),
-      );
-
-      return this.httpService.axiosRef
-        .post('https://api.socialdev.club/queue/stock/sell', { ...body, queueUniqueId })
-        .then(async (res) => {
-          return res.data;
-        })
-        .catch(async (error) => {
-          console.error(error);
-          await this.stockProcessor.sellStock(body.stockId, body, { queueMessageId: queueUniqueId });
-          return { messageId: 'direct' };
-        });
-    }
 
     const response = await this.stockProcessor.sellStock(body.stockId, body, { queueMessageId: queueUniqueId });
     return response;

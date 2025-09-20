@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpException, HttpStatus, Param, Patch, Post, Query } from '@nestjs/common';
 import { Request } from 'shared~type-party';
 import { PartyService } from './party.service';
 import { Party } from './schema/party.schema';
@@ -13,8 +13,12 @@ export class PartyController {
   }
 
   @Get('/query/:partyId')
-  queryParty(@Param('partyId') partyId: string): Promise<Party> {
-    return this.partyService.queryParty(partyId);
+  async queryParty(@Param('partyId') partyId: string): Promise<Party> {
+    const party = await this.partyService.queryParty(partyId);
+    if (!party) {
+      throw new HttpException('Party not found', HttpStatus.NOT_FOUND);
+    }
+    return party;
   }
 
   @Post()

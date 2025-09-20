@@ -1,6 +1,6 @@
 import { randomUUID } from 'crypto';
 import dayjs from 'dayjs';
-import { CompanyInfo, StockPhase, StockSchema } from 'shared~type-stock';
+import { CompanyInfo, StockGameMode, StockPhase, StockSchema } from 'shared~type-stock';
 
 export class Stock implements StockSchema {
   _id: string;
@@ -23,6 +23,18 @@ export class Stock implements StockSchema {
 
   round: number;
 
+  initialMoney: number;
+
+  hasLoan: boolean;
+
+  maxStockHintCount: number;
+
+  maxMarketStockCount: number;
+
+  maxPersonalStockCount: number;
+
+  gameMode: StockGameMode;
+
   constructor() {
     this._id = randomUUID();
     this.stockPhase = 'CROWDING';
@@ -34,5 +46,11 @@ export class Stock implements StockSchema {
     this.transactionInterval = 0;
     this.fluctuationsInterval = 5;
     this.round = 0;
+    this.initialMoney = 1000000;
+    this.hasLoan = true;
+    this.maxMarketStockCount = null;
+    this.maxPersonalStockCount = null;
+    this.maxStockHintCount = null;
+    this.gameMode = 'stock';
   }
 }
