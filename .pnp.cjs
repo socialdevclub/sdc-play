@@ -16285,6 +16285,7 @@ const RAW_RUNTIME_STATE =
           ["react-player", "virtual:3781e4e4653b304d27938f77fea1ab9b6773bbd3d16c365c26414696786c5b1cc2fb193f577d466767d7df01d7ff1a4418f0d78f32cd3cf5e383212925d5a89b#npm:2.13.0"],\
           ["react-responsive", "virtual:3781e4e4653b304d27938f77fea1ab9b6773bbd3d16c365c26414696786c5b1cc2fb193f577d466767d7df01d7ff1a4418f0d78f32cd3cf5e383212925d5a89b#npm:9.0.2"],\
           ["react-router-dom", "virtual:3781e4e4653b304d27938f77fea1ab9b6773bbd3d16c365c26414696786c5b1cc2fb193f577d466767d7df01d7ff1a4418f0d78f32cd3cf5e383212925d5a89b#npm:6.16.0"],\
+          ["react-simplikit", "virtual:3781e4e4653b304d27938f77fea1ab9b6773bbd3d16c365c26414696786c5b1cc2fb193f577d466767d7df01d7ff1a4418f0d78f32cd3cf5e383212925d5a89b#npm:0.0.46"],\
           ["shared~config", "workspace:package/shared/config"],\
           ["shared~type", "workspace:package/shared/type"],\
           ["shared~type-koi", "workspace:package/shared/type-koi"],\
@@ -19753,6 +19754,28 @@ const RAW_RUNTIME_STATE =
           "@types/react-dom",\
           "@types/react",\
           "react-dom",\
+          "react"\
+        ],\
+        "linkType": "HARD"\
+      }]\
+    ]],\
+    ["react-simplikit", [\
+      ["npm:0.0.46", {\
+        "packageLocation": "./.yarn/cache/react-simplikit-npm-0.0.46-4efd2432c0-0de16467b1.zip/node_modules/react-simplikit/",\
+        "packageDependencies": [\
+          ["react-simplikit", "npm:0.0.46"]\
+        ],\
+        "linkType": "SOFT"\
+      }],\
+      ["virtual:3781e4e4653b304d27938f77fea1ab9b6773bbd3d16c365c26414696786c5b1cc2fb193f577d466767d7df01d7ff1a4418f0d78f32cd3cf5e383212925d5a89b#npm:0.0.46", {\
+        "packageLocation": "./.yarn/__virtual__/react-simplikit-virtual-e9efb20be0/0/cache/react-simplikit-npm-0.0.46-4efd2432c0-0de16467b1.zip/node_modules/react-simplikit/",\
+        "packageDependencies": [\
+          ["react-simplikit", "virtual:3781e4e4653b304d27938f77fea1ab9b6773bbd3d16c365c26414696786c5b1cc2fb193f577d466767d7df01d7ff1a4418f0d78f32cd3cf5e383212925d5a89b#npm:0.0.46"],\
+          ["@types/react", "npm:18.3.18"],\
+          ["react", "npm:18.3.1"]\
+        ],\
+        "packagePeers": [\
+          "@types/react",\
           "react"\
         ],\
         "linkType": "HARD"\

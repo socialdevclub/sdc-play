@@ -12188,6 +12188,7 @@ __metadata:
     react-player: "npm:^2.13.0"
     react-responsive: "npm:^9.0.2"
     react-router-dom: "npm:^6.16.0"
+    react-simplikit: "npm:^0.0.46"
     shared~config: "workspace:*"
     shared~type: "workspace:*"
     shared~type-koi: "workspace:*"
@@ -14720,6 +14721,15 @@ __metadata:
   peerDependencies:
     react: ">=16.8"
   checksum: b509cf2a72884e31bf500c823b95bbfdf006c829ca1e97c31366aea1c0e5e43a896b020af5cfba18d23e2d18f5f707a890e4fc13493a2fb8efbdb7330390fb81
+  languageName: node
+  linkType: hard
+
+"react-simplikit@npm:^0.0.46":
+  version: 0.0.46
+  resolution: "react-simplikit@npm:0.0.46"
+  peerDependencies:
+    react: "*"
+  checksum: 0de16467b1ffba59ab0742d9746c5e05eab22a824f96c154eaaca0ec1ace9eea54dc1999dcea9b173ce2b9c2c1332f0c174a1869b3de6a6e4ab371d71bc7d65b
   languageName: node
   linkType: hard
 

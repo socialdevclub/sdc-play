@@ -51,6 +51,7 @@
     "react-player": "^2.13.0",
     "react-responsive": "^9.0.2",
     "react-router-dom": "^6.16.0",
+    "react-simplikit": "^0.0.46",
     "shared~type-party": "workspace:*",
     "socket.io-client": "^4.7.2",
     "sort-by": "^1.2.0"
