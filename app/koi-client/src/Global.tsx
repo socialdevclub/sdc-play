@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { RouterProvider, createBrowserRouter } from 'react-router-dom';
+import { useStorageState } from 'react-simplikit';
 import { ConfigProvider } from 'antd';
 import { QueryClientProvider } from 'lib-react-query';
 import { useAtom } from 'jotai';
@@ -69,6 +70,11 @@ const router = createBrowserRouter([
   },
 ]);
 
+type BoothPendingJoin = {
+  partyId: string;
+  timestamp: number;
+};
+
 // Booth Mode App Component
 const BoothModeApp: React.FC<{
   supabaseSession: Session | null;
@@ -76,6 +82,10 @@ const BoothModeApp: React.FC<{
 }> = ({ supabaseSession, setSupabaseSession }) => {
   const { boothUser, loginAsGuest } = useBoothContext();
   const [showAccountLogin, setShowAccountLogin] = useState(false);
+  const [boothPendingJoin, setBoothPendingJoin] = useStorageState<BoothPendingJoin>('BOOTH_PENDING_JOIN', {
+    deserializer: (value) => JSON.parse(value),
+    serializer: (value) => JSON.stringify(value),
+  });
 
   // Extract party ID from URL
   const partyId = window.location.pathname.match(/\/party\/(.+)/)?.[1];
@@ -89,36 +99,37 @@ const BoothModeApp: React.FC<{
   // Handle joining party for booth users after reload
   const { mutateAsync: joinParty } = Query.Party.useJoinParty();
 
+  const isGuest = boothUser?.isGuest;
+  const supabaseUserId = supabaseSession?.user?.id;
+
   useEffect(() => {
     // Check for pending join after reload
-    const pendingJoinStr = localStorage.getItem('BOOTH_PENDING_JOIN');
-    if (pendingJoinStr && boothUser?.isGuest && supabaseSession?.user?.id) {
+    if (boothPendingJoin && isGuest && supabaseUserId) {
       try {
-        const pendingJoin = JSON.parse(pendingJoinStr);
         // Check if this is a recent pending join (within 10 seconds)
-        if (Date.now() - pendingJoin.timestamp < 10000) {
+        if (Date.now() - boothPendingJoin.timestamp < 10000) {
           // Join the party with the anonymous auth user ID
-          joinParty({ partyId: pendingJoin.partyId, userId: supabaseSession.user.id })
+          joinParty({ partyId: boothPendingJoin.partyId, userId: supabaseUserId })
             .then(() => {
               console.log('Booth user joined party successfully');
               // Clear the pending join
-              localStorage.removeItem('BOOTH_PENDING_JOIN');
+              setBoothPendingJoin(undefined);
             })
             .catch((error) => {
               console.error('Failed to join party as booth user:', error);
               // Still clear the pending join to avoid infinite retries
-              localStorage.removeItem('BOOTH_PENDING_JOIN');
+              setBoothPendingJoin(undefined);
             });
         } else {
           // Clear stale pending join
-          localStorage.removeItem('BOOTH_PENDING_JOIN');
+          setBoothPendingJoin(undefined);
         }
       } catch (e) {
         console.error('Error parsing pending join:', e);
-        localStorage.removeItem('BOOTH_PENDING_JOIN');
+        setBoothPendingJoin(undefined);
       }
     }
-  }, [boothUser, joinParty, supabaseSession]);
+  }, [boothPendingJoin, isGuest, joinParty, setBoothPendingJoin, supabaseUserId]);
 
   // Handle guest join
   const handleGuestJoin = async (nickname: string) => {
@@ -130,13 +141,10 @@ const BoothModeApp: React.FC<{
 
       if (currentPartyId) {
         // Store the party ID and a flag to join after reload
-        localStorage.setItem(
-          'BOOTH_PENDING_JOIN',
-          JSON.stringify({
-            partyId: currentPartyId,
-            timestamp: Date.now(),
-          }),
-        );
+        setBoothPendingJoin({
+          partyId: currentPartyId,
+          timestamp: Date.now(),
+        });
       }
 
       // After successful anonymous auth, the auth state change will trigger a re-render
