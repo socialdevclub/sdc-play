@@ -6,7 +6,12 @@ import { message, Switch, Dropdown } from 'antd';
 import { useAtomValue } from 'jotai';
 import { Query } from '../../../../../../hook';
 import { UserStore } from '../../../../../../store';
-import { fluctuationMenuItems, initialMoneyMenuItems, maxMarketStockCountMenuItems } from './constant';
+import {
+  fluctuationMenuItems,
+  initialMoneyMenuItems,
+  maxMarketStockCountMenuItems,
+  maxPersonalStockCountMenuItems,
+} from './constant';
 import { 게임모드, 쀼머니게임_회사 } from '../../constant';
 
 interface Props {
@@ -19,6 +24,8 @@ const Waiting = ({ HeaderComponent = <></>, stockId }: Props) => {
   const [isOpenGameOption, setIsOpenGameOption] = useState(false);
   const [maxMarketStockType, setMaxMarketStockType] = useState<string>('infinity');
   const [customMaxStock, setCustomMaxStock] = useState<string>('');
+  const [maxPersonalStockType, setMaxPersonalStockType] = useState<string>('infinity');
+  const [customMaxPersonalStock, setCustomMaxPersonalStock] = useState<string>('');
   const [gameOption, setGameOption] = useState({
     hasLoan: true,
     isTransaction: true,
@@ -36,8 +43,6 @@ const Waiting = ({ HeaderComponent = <></>, stockId }: Props) => {
       '햄찌금융',
       '호랑전자',
     ] as [string, string, string, string, string, string, string, string, string, string],
-    // personalStockLimit: true,
-    // publicStockLimit: true,
   });
 
   const { partyId } = useParams();
@@ -129,6 +134,45 @@ const Waiting = ({ HeaderComponent = <></>, stockId }: Props) => {
     return found?.key;
   };
 
+  const getMaxPersonalStockCount = (): number => {
+    if (maxPersonalStockType === 'infinity') return Infinity;
+
+    if (maxPersonalStockType === 'custom') {
+      const num = parseInt(customMaxPersonalStock, 10);
+      return !isNaN(num) && num > 0 ? num : Infinity;
+    }
+
+    const match = maxPersonalStockType.match(/player\*(\d+)/);
+    if (match) {
+      const count = (userList?.length ?? 0) * parseInt(match[1], 10);
+      console.log('🚀 ~ getMaxPersonalStockCount ~ count:', count);
+      return count;
+    }
+
+    return Infinity;
+  };
+
+  const getMaxPersonalStockLabel = (): string => {
+    const found = maxPersonalStockCountMenuItems?.find((item) => item?.key === maxPersonalStockType);
+
+    if (maxPersonalStockType === 'custom') {
+      const calculated = getMaxPersonalStockCount();
+      return calculated === Infinity ? '직접 입력' : `직접 입력 (${calculated}개)`;
+    }
+
+    if (maxPersonalStockType !== 'infinity' && maxPersonalStockType.startsWith('player*')) {
+      const calculated = getMaxPersonalStockCount();
+      const text = found?.key || '';
+      return `${text} (현재: ${calculated}개)`;
+    }
+
+    if (typeof found?.key !== 'string') {
+      return '무제한';
+    }
+
+    return found.key;
+  };
+
   const startGame = async () => {
     if (!stockId) return;
 
@@ -152,13 +196,15 @@ const Waiting = ({ HeaderComponent = <></>, stockId }: Props) => {
         stockNames: gameOption.stockNames,
       });
     }
+    const maxPersonalStockCount = gameOption.is쀼머니게임 ? Infinity : getMaxPersonalStockCount();
+    console.log('🚀 ~ startGame ~ maxPersonalStockCount:', maxPersonalStockCount);
     await mutateUpdateGame({
       _id: stockId,
       fluctuationsInterval: stock?.fluctuationsInterval,
       gameMode: gameOption.is쀼머니게임 ? 게임모드.REALISM : 게임모드.STOCK,
       hasLoan: gameOption.hasLoan,
       isTransaction: gameOption.isTransaction,
-      maxPersonalStockCount: Infinity,
+      maxPersonalStockCount,
     });
     await mutateUserInitialize({});
   };
@@ -380,6 +426,37 @@ const Waiting = ({ HeaderComponent = <></>, stockId }: Props) => {
                           />
                         </GameOption>
                       )}
+                      <GameOption id="game-option-max-personal-stock-container">
+                        <GameOptionTitle>개인 주식 수량 제한</GameOptionTitle>
+                        <Dropdown
+                          menu={{
+                            inlineIndent: 10,
+                            items: maxPersonalStockCountMenuItems,
+                            onClick: ({ key }) => setMaxPersonalStockType(key as string),
+                            style: gameOptionDropdownStyle,
+                          }}
+                          trigger={['click']}
+                          getPopupContainer={() => document.getElementById('game-option-max-personal-stock-container')!}
+                        >
+                          <GameOptionValue dark>
+                            <GameOptionText>{getMaxPersonalStockLabel()}</GameOptionText>
+                            <ChevronDown />
+                          </GameOptionValue>
+                        </Dropdown>
+                      </GameOption>
+                      {maxPersonalStockType === 'custom' && (
+                        <GameOption>
+                          <StockNameInput
+                            type="number"
+                            value={customMaxPersonalStock}
+                            onChange={(e) => setCustomMaxPersonalStock(e.target.value)}
+                            placeholder="종목당 최대 개수 (예: 10)"
+                            min="1"
+                            step="1"
+                            style={{ marginTop: '0', width: '100%' }}
+                          />
+                        </GameOption>
+                      )}
                     </>
                   )}
                   {!gameOption.is쀼머니게임 && (
@@ -397,28 +474,6 @@ const Waiting = ({ HeaderComponent = <></>, stockId }: Props) => {
                       </StockNameInputGrid>
                     </GameOption>
                   )}
-                  {/* <GameOption gap={34}>
-                    <GameOptionTitle>개인주식 보유개수제한</GameOptionTitle>
-                    <GameOptionValue>
-                      <Switch
-                        checked={gameOption.personalStockLimit}
-                        onChange={() => changeGameOption('personalStockLimit')}
-                        style={{ backgroundColor: gameOption.personalStockLimit ? '#6339E3' : '#030711' }}
-                      />
-                      <GameOptionText>{gameOption.personalStockLimit ? 'ON' : 'OFF'}</GameOptionText>
-                    </GameOptionValue>
-                  </GameOption>
-                  <GameOption gap={34}>
-                    <GameOptionTitle>시장에 풀린 주식 제한</GameOptionTitle>
-                    <GameOptionValue>
-                      <Switch
-                        checked={gameOption.publicStockLimit}
-                        onChange={() => changeGameOption('publicStockLimit')}
-                        style={{ backgroundColor: gameOption.publicStockLimit ? '#6339E3' : '#030711' }}
-                      />
-                      <GameOptionText>{gameOption.publicStockLimit ? 'ON' : 'OFF'}</GameOptionText>
-                    </GameOptionValue>
-                  </GameOption> */}
                   {/* <GameOption gap={34}>
                     <GameOptionTitle>정보 이어진 사람 공개</GameOptionTitle>
                     <GameOptionValue>

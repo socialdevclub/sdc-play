@@ -59,3 +59,18 @@ export const maxMarketStockCountMenuItems: MenuProps['items'] = [
     label: <DropdownItem>직접 입력</DropdownItem>,
   },
 ];
+
+export const maxPersonalStockCountMenuItems: MenuProps['items'] = [
+  {
+    key: 'infinity',
+    label: <DropdownItem>무제한</DropdownItem>,
+  },
+  {
+    key: 'player*1',
+    label: <DropdownItem>플레이어 수 × 1</DropdownItem>,
+  },
+  {
+    key: 'custom',
+    label: <DropdownItem>직접 입력</DropdownItem>,
+  },
+];
