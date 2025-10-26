@@ -120,8 +120,8 @@ const Stock = ({ stockId }: Props) => {
             value={searchParams.get('page') ?? '홈'}
             caseBy={{
               // 룰: <Rule stockId={stockId} />,
-              정보: <Information stockId={stockId} messageApi={messageApi} />,
-              주식: <StockInfoList stockId={stockId} messageApi={messageApi} />,
+              정보: <Information stockId={stockId} />,
+              주식: <StockInfoList stockId={stockId} />,
               포트폴리오: <Portfolio stockId={stockId} messageApi={messageApi} />,
               홈: <Home stockId={stockId} messageApi={messageApi} />,
             }}

@@ -125,7 +125,6 @@ export const StockHoldingsList = ({ stockId, userId, messageApi }: StockHoldings
         stockMessages={stockMessages}
         priceData={priceData}
         stockId={stockId}
-        messageApi={messageApi}
       />
     </>
   );
