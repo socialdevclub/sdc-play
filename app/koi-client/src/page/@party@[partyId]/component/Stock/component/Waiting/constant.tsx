@@ -44,3 +44,18 @@ export const initialMoneyMenuItems: MenuProps['items'] = [
     label: <DropdownItem>1억원</DropdownItem>,
   },
 ];
+
+export const maxMarketStockCountMenuItems: MenuProps['items'] = [
+  {
+    key: '무제한',
+    label: <DropdownItem>무제한</DropdownItem>,
+  },
+  {
+    key: 'player*3',
+    label: <DropdownItem>플레이어 수 × 3</DropdownItem>,
+  },
+  {
+    key: '직접 입력',
+    label: <DropdownItem>직접 입력</DropdownItem>,
+  },
+];

@@ -29,8 +29,6 @@ export class Stock implements StockSchema {
 
   maxStockHintCount: number;
 
-  maxMarketStockCount: number;
-
   maxPersonalStockCount: number;
 
   gameMode: StockGameMode;
@@ -48,7 +46,6 @@ export class Stock implements StockSchema {
     this.round = 0;
     this.initialMoney = 1000000;
     this.hasLoan = true;
-    this.maxMarketStockCount = null;
     this.maxPersonalStockCount = null;
     this.maxStockHintCount = null;
     this.gameMode = 'stock';

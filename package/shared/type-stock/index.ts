@@ -94,13 +94,6 @@ export type StockSchema = {
    */
   maxPersonalStockCount: number;
   /**
-   * 최대 시장 주식 개수
-   *
-   * 백엔드에서는 무한개를 `null`로 관리합니다.
-   */
-  maxMarketStockCount: number;
-
-  /**
    * 게임 모드
    *
    * 게임 모드는 백엔드에서 정의한 문자열로 관리합니다.

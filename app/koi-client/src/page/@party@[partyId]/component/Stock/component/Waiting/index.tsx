@@ -6,7 +6,7 @@ import { message, Switch, Dropdown } from 'antd';
 import { useAtomValue } from 'jotai';
 import { Query } from '../../../../../../hook';
 import { UserStore } from '../../../../../../store';
-import { fluctuationMenuItems, initialMoneyMenuItems } from './constant';
+import { fluctuationMenuItems, initialMoneyMenuItems, maxMarketStockCountMenuItems } from './constant';
 import { 게임모드, 쀼머니게임_회사 } from '../../constant';
 
 interface Props {
@@ -17,6 +17,8 @@ interface Props {
 const Waiting = ({ HeaderComponent = <></>, stockId }: Props) => {
   const [isTimeOpen, setIsTimeOpen] = useState(false);
   const [isOpenGameOption, setIsOpenGameOption] = useState(false);
+  const [maxMarketStockType, setMaxMarketStockType] = useState<string>('infinity');
+  const [customMaxStock, setCustomMaxStock] = useState<string>('');
   const [gameOption, setGameOption] = useState({
     hasLoan: true,
     isTransaction: true,
@@ -87,11 +89,52 @@ const Waiting = ({ HeaderComponent = <></>, stockId }: Props) => {
     window.open(`${window.location.origin}/backoffice/screen/${partyId}`, '_blank');
   };
 
+  const getMaxMarketStockCount = (): number => {
+    if (maxMarketStockType === 'infinity') return Infinity;
+
+    if (maxMarketStockType === 'custom') {
+      const num = parseInt(customMaxStock, 10);
+      return !isNaN(num) && num > 0 ? num : Infinity;
+    }
+
+    const match = maxMarketStockType.match(/player\*(\d+)/);
+    if (match) {
+      const count = (userList?.length ?? 0) * parseInt(match[1], 10);
+      console.log('🚀 ~ getMaxMarketStockCount ~ count:', count);
+      return count;
+    }
+
+    return Infinity;
+  };
+
+  const getMaxMarketStockLabel = (): string => {
+    const found = maxMarketStockCountMenuItems?.find((item) => item?.key === maxMarketStockType);
+
+    if (maxMarketStockType === 'custom') {
+      const calculated = getMaxMarketStockCount();
+      return calculated === Infinity ? '직접 입력' : `직접 입력 (${calculated}개)`;
+    }
+
+    if (maxMarketStockType !== 'infinity' && maxMarketStockType.startsWith('player*')) {
+      const calculated = getMaxMarketStockCount();
+      const text = found?.key || '';
+      return `${text} (현재: ${calculated}개)`;
+    }
+
+    if (typeof found?.key !== 'string') {
+      console.warn('found?.key is not a string', found?.key);
+      return '무제한';
+    }
+
+    return found?.key;
+  };
+
   const startGame = async () => {
     if (!stockId) return;
 
     await mutateAlignIndex({});
     await mutateResetGame({});
+    console.log('🚀 ~ startGame ~ gameOption.is쀼머니게임:', gameOption.is쀼머니게임);
     if (gameOption.is쀼머니게임) {
       await mutateInitStock({
         companies: 쀼머니게임_회사,
@@ -100,9 +143,11 @@ const Waiting = ({ HeaderComponent = <></>, stockId }: Props) => {
         maxStockHintCount: gameOption.maxStockHintCount,
       });
     } else {
+      const maxMarketStockCount = getMaxMarketStockCount();
+      console.log('🚀 ~ startGame ~ maxMarketStockCount:', maxMarketStockCount);
       await mutateInitStock({
         isCustomCompanies: false,
-        maxMarketStockCount: Infinity,
+        maxMarketStockCount,
         maxStockHintCount: gameOption.maxStockHintCount,
         stockNames: gameOption.stockNames,
       });
@@ -302,6 +347,41 @@ const Waiting = ({ HeaderComponent = <></>, stockId }: Props) => {
                       </GameOptionValue>
                     </Dropdown>
                   </GameOption>
+                  {!gameOption.is쀼머니게임 && (
+                    <>
+                      <GameOption id="game-option-max-stock-container">
+                        <GameOptionTitle>시장 주식 수량 제한</GameOptionTitle>
+                        <Dropdown
+                          menu={{
+                            inlineIndent: 10,
+                            items: maxMarketStockCountMenuItems,
+                            onClick: ({ key }) => setMaxMarketStockType(key as string),
+                            style: gameOptionDropdownStyle,
+                          }}
+                          trigger={['click']}
+                          getPopupContainer={() => document.getElementById('game-option-max-stock-container')!}
+                        >
+                          <GameOptionValue dark>
+                            <GameOptionText>{getMaxMarketStockLabel()}</GameOptionText>
+                            <ChevronDown />
+                          </GameOptionValue>
+                        </Dropdown>
+                      </GameOption>
+                      {maxMarketStockType === 'custom' && (
+                        <GameOption>
+                          <StockNameInput
+                            type="number"
+                            value={customMaxStock}
+                            onChange={(e) => setCustomMaxStock(e.target.value)}
+                            placeholder="양의 정수 입력 (예: 100)"
+                            min="1"
+                            step="1"
+                            style={{ marginTop: '0', width: '100%' }}
+                          />
+                        </GameOption>
+                      )}
+                    </>
+                  )}
                   {!gameOption.is쀼머니게임 && (
                     <GameOption style={{ display: 'block', gap: '10px' }}>
                       <GameOptionTitle>종목명</GameOptionTitle>
