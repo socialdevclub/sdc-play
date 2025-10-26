@@ -175,7 +175,9 @@ const Table = ({ elapsedTime, pov, stockId }: Props) => {
               {users?.map((user, index) => {
                 return (
                   <StyledTr key={user.userId} isAlternate={index % 2 === 1}>
-                    <StyledTd>{profiles?.data?.find((v) => v.id === user.userId)?.username}</StyledTd>
+                    <StyledTd>
+                      {profiles?.data?.find((v) => v.id === user.userId)?.username || user.userInfo.nickname}
+                    </StyledTd>
                     {companyNames.map((company) => {
                       return (
                         <StyledTd key={company}>
@@ -230,7 +232,9 @@ const Table = ({ elapsedTime, pov, stockId }: Props) => {
                     </StyledTd>
 
                     {/* 닉네임 */}
-                    <StyledTd isBold>{profiles?.data?.find((v) => v.id === user.userId)?.username}</StyledTd>
+                    <StyledTd isBold>
+                      {profiles?.data?.find((v) => v.id === user.userId)?.username || user.userInfo.nickname}
+                    </StyledTd>
 
                     {/* 현재 소지금 */}
                     <StyledTd isBold>{commaizeNumber(user.money)}</StyledTd>
@@ -296,7 +300,9 @@ const Table = ({ elapsedTime, pov, stockId }: Props) => {
                     <StyledTd>
                       <RankBadge>{i + 1}</RankBadge>
                     </StyledTd>
-                    <StyledTd isBold>{profiles?.data?.find((v) => v.id === user.userId)?.username}</StyledTd>
+                    <StyledTd isBold>
+                      {profiles?.data?.find((v) => v.id === user.userId)?.username || user.userInfo.nickname}
+                    </StyledTd>
                     <StyledTd>{commaizeNumber(round0)}</StyledTd>
                     <StyledTd>{commaizeNumber(round1)}</StyledTd>
                     <StyledTd>{commaizeNumber(round2)}</StyledTd>

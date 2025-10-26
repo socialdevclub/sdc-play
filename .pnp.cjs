@@ -5548,6 +5548,14 @@ const RAW_RUNTIME_STATE =
           ["playwright", "npm:1.49.1"]\
         ],\
         "linkType": "HARD"\
+      }],\
+      ["npm:1.55.0", {\
+        "packageLocation": "./.yarn/cache/@playwright-test-npm-1.55.0-1c32aff59a-bfaede669b.zip/node_modules/@playwright/test/",\
+        "packageDependencies": [\
+          ["@playwright/test", "npm:1.55.0"],\
+          ["playwright", "npm:1.55.0"]\
+        ],\
+        "linkType": "HARD"\
       }]\
     ]],\
     ["@polka/url", [\
@@ -16220,6 +16228,7 @@ const RAW_RUNTIME_STATE =
           ["@headlessui/react", "virtual:3781e4e4653b304d27938f77fea1ab9b6773bbd3d16c365c26414696786c5b1cc2fb193f577d466767d7df01d7ff1a4418f0d78f32cd3cf5e383212925d5a89b#npm:1.7.17"],\
           ["@linaria/core", "npm:6.0.0"],\
           ["@linaria/react", "virtual:3781e4e4653b304d27938f77fea1ab9b6773bbd3d16c365c26414696786c5b1cc2fb193f577d466767d7df01d7ff1a4418f0d78f32cd3cf5e383212925d5a89b#npm:6.0.0"],\
+          ["@playwright/test", "npm:1.55.0"],\
           ["@radix-ui/react-scroll-area", "virtual:3781e4e4653b304d27938f77fea1ab9b6773bbd3d16c365c26414696786c5b1cc2fb193f577d466767d7df01d7ff1a4418f0d78f32cd3cf5e383212925d5a89b#npm:1.2.1"],\
           ["@stitches/core", "npm:1.2.8"],\
           ["@supabase/auth-ui-shared", "virtual:3781e4e4653b304d27938f77fea1ab9b6773bbd3d16c365c26414696786c5b1cc2fb193f577d466767d7df01d7ff1a4418f0d78f32cd3cf5e383212925d5a89b#npm:0.1.8"],\
@@ -16267,6 +16276,7 @@ const RAW_RUNTIME_STATE =
           ["localforage", "npm:1.10.0"],\
           ["lucide-react", "virtual:3781e4e4653b304d27938f77fea1ab9b6773bbd3d16c365c26414696786c5b1cc2fb193f577d466767d7df01d7ff1a4418f0d78f32cd3cf5e383212925d5a89b#npm:0.475.0"],\
           ["match-sorter", "npm:6.3.1"],\
+          ["playwright", "npm:1.55.0"],\
           ["prettier", "npm:2.8.8"],\
           ["qrcode.react", "virtual:3781e4e4653b304d27938f77fea1ab9b6773bbd3d16c365c26414696786c5b1cc2fb193f577d466767d7df01d7ff1a4418f0d78f32cd3cf5e383212925d5a89b#npm:3.1.0"],\
           ["react", "npm:18.3.1"],\
@@ -16275,6 +16285,7 @@ const RAW_RUNTIME_STATE =
           ["react-player", "virtual:3781e4e4653b304d27938f77fea1ab9b6773bbd3d16c365c26414696786c5b1cc2fb193f577d466767d7df01d7ff1a4418f0d78f32cd3cf5e383212925d5a89b#npm:2.13.0"],\
           ["react-responsive", "virtual:3781e4e4653b304d27938f77fea1ab9b6773bbd3d16c365c26414696786c5b1cc2fb193f577d466767d7df01d7ff1a4418f0d78f32cd3cf5e383212925d5a89b#npm:9.0.2"],\
           ["react-router-dom", "virtual:3781e4e4653b304d27938f77fea1ab9b6773bbd3d16c365c26414696786c5b1cc2fb193f577d466767d7df01d7ff1a4418f0d78f32cd3cf5e383212925d5a89b#npm:6.16.0"],\
+          ["react-simplikit", "virtual:3781e4e4653b304d27938f77fea1ab9b6773bbd3d16c365c26414696786c5b1cc2fb193f577d466767d7df01d7ff1a4418f0d78f32cd3cf5e383212925d5a89b#npm:0.0.46"],\
           ["shared~config", "workspace:package/shared/config"],\
           ["shared~type", "workspace:package/shared/type"],\
           ["shared~type-koi", "workspace:package/shared/type-koi"],\
@@ -18123,6 +18134,15 @@ const RAW_RUNTIME_STATE =
           ["playwright-core", "npm:1.49.1"]\
         ],\
         "linkType": "HARD"\
+      }],\
+      ["npm:1.55.0", {\
+        "packageLocation": "./.yarn/cache/playwright-npm-1.55.0-20fc643e73-df02529693.zip/node_modules/playwright/",\
+        "packageDependencies": [\
+          ["playwright", "npm:1.55.0"],\
+          ["fsevents", "patch:fsevents@npm%3A2.3.2#optional!builtin<compat/fsevents>::version=2.3.2&hash=df0bf1"],\
+          ["playwright-core", "npm:1.55.0"]\
+        ],\
+        "linkType": "HARD"\
       }]\
     ]],\
     ["playwright-core", [\
@@ -18130,6 +18150,13 @@ const RAW_RUNTIME_STATE =
         "packageLocation": "./.yarn/unplugged/playwright-core-npm-1.49.1-a372dbc965/node_modules/playwright-core/",\
         "packageDependencies": [\
           ["playwright-core", "npm:1.49.1"]\
+        ],\
+        "linkType": "HARD"\
+      }],\
+      ["npm:1.55.0", {\
+        "packageLocation": "./.yarn/cache/playwright-core-npm-1.55.0-1c6d3fab0f-843376a8e2.zip/node_modules/playwright-core/",\
+        "packageDependencies": [\
+          ["playwright-core", "npm:1.55.0"]\
         ],\
         "linkType": "HARD"\
       }]\
@@ -19727,6 +19754,28 @@ const RAW_RUNTIME_STATE =
           "@types/react-dom",\
           "@types/react",\
           "react-dom",\
+          "react"\
+        ],\
+        "linkType": "HARD"\
+      }]\
+    ]],\
+    ["react-simplikit", [\
+      ["npm:0.0.46", {\
+        "packageLocation": "./.yarn/cache/react-simplikit-npm-0.0.46-4efd2432c0-0de16467b1.zip/node_modules/react-simplikit/",\
+        "packageDependencies": [\
+          ["react-simplikit", "npm:0.0.46"]\
+        ],\
+        "linkType": "SOFT"\
+      }],\
+      ["virtual:3781e4e4653b304d27938f77fea1ab9b6773bbd3d16c365c26414696786c5b1cc2fb193f577d466767d7df01d7ff1a4418f0d78f32cd3cf5e383212925d5a89b#npm:0.0.46", {\
+        "packageLocation": "./.yarn/__virtual__/react-simplikit-virtual-e9efb20be0/0/cache/react-simplikit-npm-0.0.46-4efd2432c0-0de16467b1.zip/node_modules/react-simplikit/",\
+        "packageDependencies": [\
+          ["react-simplikit", "virtual:3781e4e4653b304d27938f77fea1ab9b6773bbd3d16c365c26414696786c5b1cc2fb193f577d466767d7df01d7ff1a4418f0d78f32cd3cf5e383212925d5a89b#npm:0.0.46"],\
+          ["@types/react", "npm:18.3.18"],\
+          ["react", "npm:18.3.1"]\
+        ],\
+        "packagePeers": [\
+          "@types/react",\
           "react"\
         ],\
         "linkType": "HARD"\

@@ -4,22 +4,40 @@ import saveAs from 'file-saver';
 import html2canvas from 'html2canvas';
 import { useAtomValue } from 'jotai';
 import { AlignLeft, Bookmark, LogOut, Share } from 'lucide-react';
-import { useRef } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 // import { GetStockUser } from 'shared~type-stock/Response';
-import { css } from '@linaria/core';
+import { css } from '@emotion/react';
 import { commaizeNumber } from '@toss/utils';
 import { LOCAL_STORAGE_KEY } from '../../../../../../config/localStorage';
 import { Query } from '../../../../../../hook';
 import { UserStore } from '../../../../../../store';
 import { formatPercentage } from '../../../../../../utils/stock';
 import ResultRealism from './ResultRealism';
+import { useBoothContext } from '../../../../../../context/BoothContext';
 
 interface ResultProps {
   stockId: string;
 }
 
+// localStorage key for Instagram visit tracking
+const INSTAGRAM_VISITED_KEY = 'sdc_instagram_visited';
+
 function Result({ stockId }: ResultProps) {
+  const { boothUser } = useBoothContext();
+  const isGuestUser = boothUser?.isGuest;
+
+  // State to track if user has visited Instagram
+  const [hasVisitedInstagram, setHasVisitedInstagram] = useState(false);
+
+  // Check localStorage on mount
+  useEffect(() => {
+    const visited = localStorage.getItem(INSTAGRAM_VISITED_KEY);
+    if (visited === 'true') {
+      setHasVisitedInstagram(true);
+    }
+  }, []);
+
   const supabaseSession = useAtomValue(UserStore.supabaseSession);
   const { getRound0Avg, getRound12Avg } = Query.Stock.useQueryResult(stockId);
 
@@ -162,6 +180,161 @@ function Result({ stockId }: ResultProps) {
     }
   };
 
+  // Handle Instagram visit
+  const handleInstagramVisit = () => {
+    // Open Instagram in new tab
+    window.open('https://www.instagram.com/socialdev.club', '_blank', 'noopener,noreferrer');
+
+    // Save visit status to localStorage
+    localStorage.setItem(INSTAGRAM_VISITED_KEY, 'true');
+
+    // Update state to show results
+    setHasVisitedInstagram(true);
+  };
+
+  // Show Instagram prompt only for guest users who haven't visited yet
+  if (isGuestUser && !hasVisitedInstagram) {
+    return (
+      <Container>
+        <div css={css`
+          position: relative;
+          height: 100%;
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+          align-items: center;
+          padding: 40px;
+          overflow: hidden;
+        `}>
+          <div css={css`
+            position: relative;
+            z-index: 2;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 24px;
+            padding: 40px 32px;
+            box-shadow:
+              0 20px 60px rgba(0, 0, 0, 0.1),
+              0 8px 30px rgba(102, 126, 234, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            width: 100%;
+            text-align: center;
+            transform: translateY(0);
+            animation: slideInUp 0.8s ease-out;
+
+            @keyframes slideInUp {
+              from {
+                opacity: 0;
+                transform: translateY(30px);
+              }
+              to {
+                opacity: 1;
+                transform: translateY(0);
+              }
+            }
+          `}>
+            {/* Trophy Icon */}
+            <div css={css`
+              margin-bottom: 20px;
+              font-size: 48px;
+              animation: bounce 2s infinite;
+
+              @keyframes bounce {
+                0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+                40% { transform: translateY(-10px); }
+                60% { transform: translateY(-5px); }
+              }
+            `}>
+              🏆
+            </div>
+
+            {/* Main Title */}
+            <h2 css={css`
+              font-size: 24px;
+              font-weight: 700;
+              color: #1a1a1a;
+              margin-bottom: 12px;
+              line-height: 1.3;
+            `}>
+              인스타 방문하고<br/>
+              <span css={css`
+                background: linear-gradient(135deg, #667eea, #764ba2);
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+                background-clip: text;
+              `}>
+                결과 확인하기!
+              </span>
+            </h2>
+
+            {/* Subtitle */}
+            <p css={css`
+              font-size: 16px;
+              color: #666;
+              margin-bottom: 24px;
+              line-height: 1.5;
+            `}>
+              소셜데브클럽 인스타그램 팔로우하기
+            </p>
+
+            {/* CTA Button */}
+            <button
+              css={css`
+                width: 100%;
+                padding: 18px 24px;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                color: white;
+                border: none;
+                border-radius: 16px;
+                font-size: 18px;
+                font-weight: 700;
+                cursor: pointer;
+                position: relative;
+                overflow: hidden;
+                box-shadow:
+                  0 8px 24px rgba(102, 126, 234, 0.4),
+                  0 4px 12px rgba(118, 75, 162, 0.3);
+                transform: translateY(0);
+                transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+                &::before {
+                  content: '';
+                  position: absolute;
+                  top: 0;
+                  left: -100%;
+                  width: 100%;
+                  height: 100%;
+                  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+                  transition: left 0.6s;
+                }
+              `}
+              onClick={handleInstagramVisit}
+            >
+              <span css={css`
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 8px;
+              `}>
+                인스타그램 팔로우하고 결과 확인
+              </span>
+            </button>
+
+            {/* Security Note */}
+            <p css={css`
+              font-size: 12px;
+              color: #999;
+              margin-top: 16px;
+              line-height: 1.4;
+            `}>
+              새 창에서 열리며, 개인정보는 수집되지 않습니다
+            </p>
+          </div>
+        </div>
+      </Container>
+    );
+  }
+
   return (
     <Container>
       {stock.gameMode !== 'realism' && (
@@ -187,7 +360,7 @@ function Result({ stockId }: ResultProps) {
             </Wrapper>
           </CaptureArea>
           <Button
-            className={css`
+            css={css`
               margin-bottom: 35px;
             `}
             color="#9333EA"
@@ -256,10 +429,12 @@ function Result({ stockId }: ResultProps) {
 
       {stock.gameMode === 'stock' && (
         <BottomSection>
-          <Button color="#374151" onClick={handleShare}>
+          {/*
+            <Button color="#374151" onClick={handleShare}>
             <Share size={24} />
             <Label>공유하기</Label>
-          </Button>
+            </Button>
+            */}
           <Button color="#F63C6B" onClick={() => handleExit()}>
             <LogOut size={24} />
             <Label>나가기</Label>

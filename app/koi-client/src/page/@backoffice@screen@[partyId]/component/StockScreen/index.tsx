@@ -6,9 +6,12 @@ import { QRCode } from 'antd';
 import { PartySchemaWithId } from 'shared~type-party';
 import dayjs from 'dayjs';
 import { Query } from '../../../../hook';
+import { useTradeDetection } from '../../../../hook/useTradeDetection';
 import prependZero from '../../../../service/prependZero';
 import PlayingWrapper from './PlayingWrapper';
 import Table from './Table';
+import TradeFeed from './TradeFeed';
+import { css } from '@emotion/react';
 
 interface Props {
   party: PartySchemaWithId;
@@ -28,6 +31,7 @@ export default function StockScreen({ party }: Props) {
     refetchInterval: 500,
   });
   const { mutateAsync: mutateUpdateStock } = Query.Stock.useUpdateStock();
+  const { trades } = useTradeDetection(stock?._id || '');
 
   const startedTime = useMemo(() => dayjs(stock?.startedTime).toDate(), [stock?.startedTime]);
   const isTransaction = stock?.isTransaction ?? false;
@@ -110,15 +114,29 @@ export default function StockScreen({ party }: Props) {
               <Wrapper>
                 <Container>{isTransaction && <Table stockId={stock._id} />}</Container>
               </Wrapper>
+              {isTransaction && <TradeFeed trades={trades} />}
             </PlayingWrapper>
           ),
+          RESULT: (
+            <>
+              <TimeBox>소셜데브클럽이 궁금하다면?</TimeBox>
+              <Wrapper>
+                <Container>
+                  <QRCode value={`https://www.instagram.com/socialdev.club/`} bgColor="#ffffff" size={300} />
+                </Container>
+              </Wrapper>
+            </>
+          )
         }}
         defaultComponent={
           <>
             <TimeBox>QR코드를 스캔하여 입장하세요</TimeBox>
             <Wrapper>
               <Container>
-                <QRCode value={window.location.origin} bgColor="#ffffff" size={300} />
+                <QRCode value={`${window.location.origin}/party/${party._id}`} bgColor="#ffffff" size={300} />
+                <QRInfo>
+                  <QRUrl>{`${window.location.origin}/party/${party._id}`}</QRUrl>
+                </QRInfo>
               </Container>
             </Wrapper>
           </>
@@ -154,8 +172,10 @@ const TimeBox = styled.div`
 
 const Container = styled.div`
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: 40px;
 
   width: 100%;
   height: 100%;
@@ -165,4 +185,34 @@ const Container = styled.div`
   background-color: #252836;
 
   padding: 20px 0;
+`;
+
+const QRInfo = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+`;
+
+const QRTitle = styled.h2`
+  font-size: 36px;
+  color: #ffffff;
+  margin: 0;
+  font-family: 'DungGeunMo', monospace;
+`;
+
+const QRSubtitle = styled.p`
+  font-size: 20px;
+  color: #9ca3af;
+  margin: 0;
+`;
+
+const QRUrl = styled.p`
+  font-size: 16px;
+  color: #667eea;
+  margin: 8px 0 0 0;
+  padding: 8px 16px;
+  background: rgba(102, 126, 234, 0.1);
+  border-radius: 8px;
+  font-family: monospace;
 `;

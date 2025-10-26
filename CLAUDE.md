@@ -81,6 +81,7 @@ yarn test:e2e               # Run end-to-end tests
 
 ### Environment Configuration
 - Uses `local.socialdev.club` for local development (CORS handling)
+- **IMPORTANT**: For Playwright testing, use `http://local.socialdev.club:5173` instead of `localhost:5173`
 - Requires AWS SSO configuration for DynamoDB access
 - Environment variables managed through `.env` files
 

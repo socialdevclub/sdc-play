@@ -5,4 +5,6 @@ export const PROFIT_BADGE_COLOR = {
 };
 
 export const BULLISH_COLOR = '#f63c6b';
+export const BULLISH_COLOR_50 = 'rgb(0 122 255 / 50%)';
 export const BEARISH_COLOR = '#007aff';
+export const BEARISH_COLOR_50 = 'rgb(239 68 68 / 50%)';

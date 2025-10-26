@@ -4,7 +4,6 @@ import { Query } from '../../hook';
 import { fetchProfileByUsername } from '../../hook/query/Supabase/useQueryProfileByUsername';
 import { ControlButton, ControlButtonGroup } from '.';
 
-// eslint-disable-next-line @typescript-eslint/no-empty-interface
 interface UserListProps {
   stockId: string;
 }
@@ -88,7 +87,7 @@ const UserList: React.FC<UserListProps> = ({ stockId }) => {
             <UserCardContent>
               <UserName>
                 <UserIndex>{user.index}</UserIndex>
-                {profiles?.data?.find((v) => v.id === user.userId)?.username || '사용자'}
+                {profiles?.data?.find((v) => v.id === user.userId)?.username || user.userInfo.nickname}
               </UserName>
               {!user.userInfo.introduction && <MissingIntro>자기소개 미작성</MissingIntro>}
             </UserCardContent>
@@ -109,7 +108,7 @@ const UserList: React.FC<UserListProps> = ({ stockId }) => {
           <WarningList>
             {introNotCompletedUsers.map((user) => (
               <WarningItem key={user.userId}>
-                {profiles?.data?.find((v) => v.id === user.userId)?.username || '사용자'}
+                {profiles?.data?.find((v) => v.id === user.userId)?.username || user.userInfo.nickname}
               </WarningItem>
             ))}
           </WarningList>

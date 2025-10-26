@@ -2,7 +2,7 @@ import { MessageInstance } from 'antd/es/message/interface';
 import { Query } from '../../../hook';
 
 interface Props {
-  messageApi: MessageInstance;
+  messageApi?: MessageInstance;
   refetchUser: () => void;
 }
 
@@ -59,14 +59,14 @@ export const useTradeStock = ({ messageApi, refetchUser }: Props): ReturnType =>
     const isFailed = status >= 400;
 
     if (isSuccess) {
-      messageApi.destroy();
-      messageApi.open({ content: message, duration: 2, type: 'success' });
+      messageApi?.destroy();
+      messageApi?.open({ content: message, duration: 2, type: 'success' });
       callback?.();
     }
 
     if (isFailed) {
-      messageApi.destroy();
-      messageApi.open({ content: message, duration: 2, type: 'error' });
+      messageApi?.destroy();
+      messageApi?.open({ content: message, duration: 2, type: 'error' });
     }
   };
 
@@ -86,14 +86,14 @@ export const useTradeStock = ({ messageApi, refetchUser }: Props): ReturnType =>
     const isFailed = status >= 400;
 
     if (isSuccess) {
-      messageApi.destroy();
-      messageApi.open({ content: message, duration: 2, type: 'success' });
+      messageApi?.destroy();
+      messageApi?.open({ content: message, duration: 2, type: 'success' });
       callback?.();
     }
 
     if (isFailed) {
-      messageApi.destroy();
-      messageApi.open({ content: message, duration: 2, type: 'error' });
+      messageApi?.destroy();
+      messageApi?.open({ content: message, duration: 2, type: 'error' });
     }
   };
 

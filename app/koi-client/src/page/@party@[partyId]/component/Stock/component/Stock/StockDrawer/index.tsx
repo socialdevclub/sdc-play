@@ -1,15 +1,14 @@
 import { Drawer } from 'antd';
 import { useMediaQuery } from 'react-responsive';
 import { useAtomValue } from 'jotai';
-import { MessageInstance } from 'antd/es/message/interface';
 import { StockConfig } from 'shared~config';
 import { useEffect, useMemo, useState } from 'react';
 import { MEDIA_QUERY } from '../../../../../../../config/common';
 import { Query } from '../../../../../../../hook';
 import { UserStore } from '../../../../../../../store';
 import { useTradeStock } from '../../../../../hook/useTradeStock';
-import StockOverview from './StockOverview';
 import StockTransaction from './StockTransaction';
+import StockOverviewRealism from './StockOverviewRealism';
 
 export type StockDrawerState = 'OVERVIEW' | 'BUY' | 'SELL';
 
@@ -20,18 +19,9 @@ interface Props {
   stockMessages: string[];
   priceData: Record<string, number[]>;
   stockId: string;
-  messageApi: MessageInstance;
 }
 
-const StockDrawer = ({
-  drawerOpen,
-  handleCloseDrawer,
-  selectedCompany,
-  stockMessages,
-  priceData,
-  stockId,
-  messageApi,
-}: Props) => {
+const StockDrawer = ({ drawerOpen, handleCloseDrawer, selectedCompany, stockMessages, priceData, stockId }: Props) => {
   const isDesktop = useMediaQuery({ query: MEDIA_QUERY.DESKTOP });
   const supabaseSession = useAtomValue(UserStore.supabaseSession);
   const userId = supabaseSession?.user.id;
@@ -61,7 +51,9 @@ const StockDrawer = ({
   } = Query.Stock.useQueryStock(stockId, {
     refetchInterval: Number.POSITIVE_INFINITY,
   });
-  const { isBuyLoading, isSellLoading, onClickBuy, onClickSell } = useTradeStock({ messageApi, refetchUser });
+  const { isBuyLoading, isSellLoading, onClickBuy, onClickSell } = useTradeStock({
+    refetchUser,
+  });
 
   const 보유주식 = useMemo(() => {
     return (
@@ -139,7 +131,7 @@ const StockDrawer = ({
         switch (drawerState) {
           case 'OVERVIEW':
             return (
-              <StockOverview
+              <StockOverviewRealism
                 stockId={stockId}
                 selectedCompany={selectedCompany}
                 stockMessages={stockMessages}

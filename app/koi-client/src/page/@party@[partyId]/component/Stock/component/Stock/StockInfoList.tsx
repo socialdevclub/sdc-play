@@ -2,7 +2,6 @@ import styled from '@emotion/styled';
 import { objectEntries } from '@toss/utils';
 import { ChevronRight } from 'lucide-react';
 import { useMemo, useState } from 'react';
-import { MessageInstance } from 'antd/es/message/interface';
 import { useAtomValue } from 'jotai';
 import useStockChanges from '../../../../../../hook/query/Stock/useStockChange.ts';
 import { getAnimalImageSource, getStockMessages } from '../../../../../../utils/stock.ts';
@@ -12,10 +11,9 @@ import StockDrawer from './StockDrawer/index.tsx';
 
 interface Props {
   stockId: string;
-  messageApi: MessageInstance;
 }
 
-const StockInfoList = ({ stockId, messageApi }: Props) => {
+const StockInfoList = ({ stockId }: Props) => {
   const supabaseSession = useAtomValue(UserStore.supabaseSession);
   const userId = supabaseSession?.user.id;
 
@@ -105,7 +103,6 @@ const StockInfoList = ({ stockId, messageApi }: Props) => {
         stockMessages={stockMessages}
         priceData={priceData}
         stockId={stockId}
-        messageApi={messageApi}
       />
     </>
   );

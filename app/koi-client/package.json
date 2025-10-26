@@ -5,7 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "yarn run build-shared~config && vite --host",
+    "dev:booth": "yarn run build-shared~config && vite --host --mode booth",
     "build": "tsc && vite build",
+    "build:booth": "tsc && vite build --mode booth",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview",
     "build-shared~config": "yarn workspace shared~config build",
@@ -49,6 +51,7 @@
     "react-player": "^2.13.0",
     "react-responsive": "^9.0.2",
     "react-router-dom": "^6.16.0",
+    "react-simplikit": "^0.0.46",
     "shared~type-party": "workspace:*",
     "socket.io-client": "^4.7.2",
     "sort-by": "^1.2.0"
@@ -57,6 +60,7 @@
     "@babel/core": "^7.23.6",
     "@babel/preset-react": "^7.23.3",
     "@babel/preset-typescript": "^7.23.3",
+    "@playwright/test": "^1.55.0",
     "@stitches/core": "^1.2.8",
     "@tanstack/react-query-devtools": "^4.35.3",
     "@types/file-saver": "^2.0.7",
@@ -81,6 +85,7 @@
     "eslint-plugin-sort-keys-fix": "^1.1.2",
     "eslint-plugin-testing-library": "^5.1.0",
     "eslint-plugin-unused-imports": "^2.0.0",
+    "playwright": "^1.55.0",
     "prettier": "^2.6.1",
     "shared~config": "workspace:*",
     "shared~type": "workspace:*",

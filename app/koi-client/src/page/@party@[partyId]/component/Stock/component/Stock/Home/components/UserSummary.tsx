@@ -5,6 +5,7 @@ import { formatPercentage } from '../../../../../../../../utils/stock';
 import { 게임모드 } from '../../../../constant';
 import { type UseStockInfo } from '../hooks/useStockInfo';
 import { BEARISH_COLOR, BULLISH_COLOR } from '../../../../color';
+import { MyLevel } from './MyLevel';
 
 // 상수 분리
 const TITLE_MAP = {
@@ -116,7 +117,7 @@ const UserSummary = ({
 
   return (
     <>
-      {/* <MyLevel moneyRatio={moneyRatio} initialMoney={stock.initialMoney} /> */}
+      {stock.gameMode === 'stock' && <MyLevel moneyRatio={moneyRatio} initialMoney={stock.initialMoney} />}
 
       {/* 잔액 카드 */}
       <Card

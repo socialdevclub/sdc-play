@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>소셜데브클럽 X배너 - 주식게임 이벤트</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+            background: #f0f0f0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .banner-container {
+            background: white;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .x-banner {
+            width: 600px;
+            height: 1800px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* Background pattern */
+        .x-banner::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image:
+                repeating-linear-gradient(45deg, transparent, transparent 35px, rgba(255,255,255,.05) 35px, rgba(255,255,255,.05) 70px),
+                repeating-linear-gradient(-45deg, transparent, transparent 35px, rgba(255,255,255,.03) 35px, rgba(255,255,255,.03) 70px);
+            pointer-events: none;
+        }
+
+        /* Top Section - Main Hook (30%) */
+        .top-section {
+            flex: 0 0 540px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 60px 40px;
+            position: relative;
+            z-index: 2;
+        }
+
+        .event-badge {
+            background: #FFD700;
+            color: #333;
+            padding: 12px 30px;
+            border-radius: 50px;
+            font-weight: 800;
+            font-size: 24px;
+            margin-bottom: 30px;
+            box-shadow: 0 8px 20px rgba(255, 215, 0, 0.4);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        .main-title {
+            font-size: 52px;
+            font-weight: 900;
+            color: white;
+            line-height: 1.2;
+            margin-bottom: 20px;
+            text-shadow: 2px 4px 10px rgba(0,0,0,0.2);
+        }
+
+        .chicken-icon {
+            font-size: 80px;
+            margin: 20px 0;
+            animation: bounce 2s ease-in-out infinite;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .winner-text {
+            font-size: 36px;
+            color: #FFD700;
+            font-weight: 800;
+            text-shadow: 2px 2px 8px rgba(0,0,0,0.3);
+        }
+
+        /* Middle-Top Section - Game Info (25%) */
+        .game-info {
+            flex: 0 0 450px;
+            background: rgba(255, 255, 255, 0.95);
+            margin: 0 30px;
+            border-radius: 20px;
+            padding: 40px;
+            position: relative;
+            z-index: 2;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+
+        .game-features {
+            list-style: none;
+        }
+
+        .game-features li {
+            display: flex;
+            align-items: center;
+            margin-bottom: 30px;
+            font-size: 28px;
+            color: #333;
+            font-weight: 600;
+        }
+
+        .game-features .icon {
+            font-size: 36px;
+            margin-right: 20px;
+            width: 50px;
+            text-align: center;
+        }
+
+        /* Middle Section - Schedule (25%) */
+        .schedule-section {
+            flex: 0 0 450px;
+            padding: 40px;
+            position: relative;
+            z-index: 2;
+        }
+
+        .schedule-title {
+            color: white;
+            font-size: 32px;
+            font-weight: 800;
+            text-align: center;
+            margin-bottom: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .schedule-title .icon {
+            margin-right: 15px;
+            font-size: 36px;
+        }
+
+        .time-slots {
+            background: rgba(255, 255, 255, 0.15);
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 20px;
+            padding: 30px;
+            backdrop-filter: blur(10px);
+        }
+
+        .time-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .time-slot {
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            font-size: 36px;
+            font-weight: 800;
+            color: #764ba2;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            transition: transform 0.3s;
+        }
+
+        .time-slot:hover {
+            transform: scale(1.05);
+        }
+
+        .winner-note {
+            text-align: center;
+            color: #FFD700;
+            font-size: 28px;
+            font-weight: 700;
+            margin-top: 25px;
+            text-shadow: 2px 2px 6px rgba(0,0,0,0.3);
+        }
+
+        /* Bottom Section - How to & Branding (20%) */
+        .bottom-section {
+            flex: 1;
+            padding: 40px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            position: relative;
+            z-index: 2;
+        }
+
+        .how-to {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 30px;
+        }
+
+        .how-to-title {
+            font-size: 28px;
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .steps {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+        }
+
+        .step {
+            text-align: center;
+            flex: 1;
+        }
+
+        .step-icon {
+            font-size: 40px;
+            margin-bottom: 10px;
+        }
+
+        .step-text {
+            font-size: 18px;
+            font-weight: 600;
+            color: #666;
+        }
+
+        .arrow {
+            font-size: 24px;
+            color: #764ba2;
+            font-weight: bold;
+        }
+
+        .branding {
+            text-align: center;
+            color: white;
+        }
+
+        .logo-placeholder {
+            width: 200px;
+            height: 60px;
+            background: white;
+            margin: 0 auto 20px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            color: #764ba2;
+            font-size: 20px;
+        }
+
+        .event-name {
+            font-size: 24px;
+            font-weight: 600;
+            opacity: 0.9;
+        }
+
+        /* Stock chart decoration */
+        .chart-decoration {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 200px;
+            opacity: 0.1;
+            background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 200"><path d="M0,150 Q50,100 100,120 T200,80 T300,100 T400,60 T500,90 T600,40" stroke="white" stroke-width="3" fill="none"/></svg>') no-repeat center;
+            background-size: cover;
+        }
+
+        /* Responsive preview controls */
+        .controls {
+            margin-top: 30px;
+            text-align: center;
+        }
+
+        .scale-control {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .scale-control label {
+            font-weight: 600;
+        }
+
+        .scale-control input {
+            width: 200px;
+        }
+
+        .scale-value {
+            font-weight: bold;
+            color: #764ba2;
+            min-width: 50px;
+        }
+
+        /* Mobile preview */
+        @media (max-width: 768px) {
+            .x-banner {
+                transform: scale(0.5);
+                transform-origin: top center;
+                margin-bottom: -900px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="banner-container">
+        <div class="x-banner" id="banner">
+            <!-- Top Section - Main Hook -->
+            <div class="top-section">
+                <div class="event-badge">🎮 EVENT</div>
+                <h1 class="main-title">
+                    10분 주식게임<br>
+                    이벤트!
+                </h1>
+                <div class="chicken-icon">🍗</div>
+                <div class="winner-text">우승자에게는 치킨!</div>
+            </div>
+
+            <!-- Game Info Section -->
+            <div class="game-info">
+                <ul class="game-features">
+                    <li>
+                        <span class="icon">📱</span>
+                        <span>모바일로 간단 참여</span>
+                    </li>
+                    <li>
+                        <span class="icon">📊</span>
+                        <span>실시간 주식 거래 게임</span>
+                    </li>
+                    <li>
+                        <span class="icon">🏆</span>
+                        <span>최고 수익률 = 치킨 획득!</span>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Schedule Section -->
+            <div class="schedule-section">
+                <h2 class="schedule-title">
+                    <span class="icon">⏰</span>
+                    오늘의 게임 시간
+                </h2>
+                <div class="time-slots">
+                    <div class="time-grid">
+                        <div class="time-slot">17:00</div>
+                        <div class="time-slot">18:00</div>
+                        <div class="time-slot">19:00</div>
+                        <div class="time-slot">20:00</div>
+                    </div>
+                    <div class="winner-note">매 시간 우승자 1명!</div>
+                </div>
+            </div>
+
+            <!-- Bottom Section -->
+            <div class="bottom-section">
+                <div class="how-to">
+                    <h3 class="how-to-title">참여방법</h3>
+                    <div class="steps">
+                        <div class="step">
+                            <div class="step-icon">🚶</div>
+                            <div class="step-text">부스 방문</div>
+                        </div>
+                        <span class="arrow">▶</span>
+                        <div class="step">
+                            <div class="step-icon">📱</div>
+                            <div class="step-text">QR 스캔</div>
+                        </div>
+                        <span class="arrow">▶</span>
+                        <div class="step">
+                            <div class="step-icon">🎮</div>
+                            <div class="step-text">게임 시작!</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="branding">
+                    <div class="logo-placeholder">소셜데브클럽</div>
+                    <div class="event-name">강남소셜링페스타 특별 이벤트</div>
+                </div>
+
+                <div class="chart-decoration"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="controls">
+        <h3>배너 미리보기 조절</h3>
+        <div class="scale-control">
+            <label for="scale">크기 조절:</label>
+            <input type="range" id="scale" min="20" max="100" value="33" step="1">
+            <span class="scale-value">33%</span>
+        </div>
+    </div>
+
+    <script>
+        // Scale control for preview
+        const scaleInput = document.getElementById('scale');
+        const scaleValue = document.querySelector('.scale-value');
+        const banner = document.getElementById('banner');
+
+        scaleInput.addEventListener('input', (e) => {
+            const scale = e.target.value / 100;
+            banner.style.transform = `scale(${scale})`;
+            banner.style.transformOrigin = 'top center';
+
+            // Adjust container margin to prevent overlap
+            const negativeMargin = -1800 * (1 - scale);
+            banner.style.marginBottom = `${negativeMargin}px`;
+
+            scaleValue.textContent = `${e.target.value}%`;
+        });
+
+        // Initialize with 33% scale for better initial view
+        banner.style.transform = 'scale(0.33)';
+        banner.style.transformOrigin = 'top center';
+        banner.style.marginBottom = '-1206px';
+    </script>
+</body>
+</html>

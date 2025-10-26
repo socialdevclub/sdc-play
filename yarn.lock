@@ -3551,6 +3551,17 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@playwright/test@npm:^1.55.0":
+  version: 1.55.0
+  resolution: "@playwright/test@npm:1.55.0"
+  dependencies:
+    playwright: "npm:1.55.0"
+  bin:
+    playwright: cli.js
+  checksum: bfaede669b0583ee6ec48bfe9ff531cac58da1b83031907d5d0fd71c33bab6766669a23359e401066d97c8e8fa76566900f71be7b290d12213ebb3530a82afbb
+  languageName: node
+  linkType: hard
+
 "@polka/url@npm:^1.0.0-next.24":
   version: 1.0.0-next.24
   resolution: "@polka/url@npm:1.0.0-next.24"
@@ -12120,6 +12131,7 @@ __metadata:
     "@headlessui/react": "npm:^1.7.17"
     "@linaria/core": "npm:^6.0.0"
     "@linaria/react": "npm:^6.0.0"
+    "@playwright/test": "npm:^1.55.0"
     "@radix-ui/react-scroll-area": "npm:^1.2.1"
     "@stitches/core": "npm:^1.2.8"
     "@supabase/auth-ui-shared": "npm:^0.1.8"
@@ -12167,6 +12179,7 @@ __metadata:
     localforage: "npm:^1.10.0"
     lucide-react: "npm:^0.475.0"
     match-sorter: "npm:^6.3.1"
+    playwright: "npm:^1.55.0"
     prettier: "npm:^2.6.1"
     qrcode.react: "npm:^3.1.0"
     react: "npm:^18.2.0"
@@ -12175,6 +12188,7 @@ __metadata:
     react-player: "npm:^2.13.0"
     react-responsive: "npm:^9.0.2"
     react-router-dom: "npm:^6.16.0"
+    react-simplikit: "npm:^0.0.46"
     shared~config: "workspace:*"
     shared~type: "workspace:*"
     shared~type-koi: "workspace:*"
@@ -13751,6 +13765,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"playwright-core@npm:1.55.0":
+  version: 1.55.0
+  resolution: "playwright-core@npm:1.55.0"
+  bin:
+    playwright-core: cli.js
+  checksum: 843376a8e2c1100d3f0625b2c85a69dc4418a0b268bdc7da6cf28252f6dc50c299c734f090a67c7f36cfa9140dacf5b95e817664e69642bcbaf06eea4d216c35
+  languageName: node
+  linkType: hard
+
 "playwright@npm:1.49.1":
   version: 1.49.1
   resolution: "playwright@npm:1.49.1"
@@ -13763,6 +13786,21 @@ __metadata:
   bin:
     playwright: cli.js
   checksum: 49fb063f4a107b8090f66d2d351ebd51fbb66843a8f95a161fa0c0e0b5156515961e75cc10f4249f61b9d2af51f762dda505c62b096d8f61cd47d1ff73ab39d2
+  languageName: node
+  linkType: hard
+
+"playwright@npm:1.55.0, playwright@npm:^1.55.0":
+  version: 1.55.0
+  resolution: "playwright@npm:1.55.0"
+  dependencies:
+    fsevents: "npm:2.3.2"
+    playwright-core: "npm:1.55.0"
+  dependenciesMeta:
+    fsevents:
+      optional: true
+  bin:
+    playwright: cli.js
+  checksum: df02529693923b9b671822dac8a2ac8a8471c9142a05e14a24f8d0038a7dcf705712363991a070fc927466bbbe70e485145cf7a77882613822f56960afc4b892
   languageName: node
   linkType: hard
 
@@ -14683,6 +14721,15 @@ __metadata:
   peerDependencies:
     react: ">=16.8"
   checksum: b509cf2a72884e31bf500c823b95bbfdf006c829ca1e97c31366aea1c0e5e43a896b020af5cfba18d23e2d18f5f707a890e4fc13493a2fb8efbdb7330390fb81
+  languageName: node
+  linkType: hard
+
+"react-simplikit@npm:^0.0.46":
+  version: 0.0.46
+  resolution: "react-simplikit@npm:0.0.46"
+  peerDependencies:
+    react: "*"
+  checksum: 0de16467b1ffba59ab0742d9746c5e05eab22a824f96c154eaaca0ec1ace9eea54dc1999dcea9b173ce2b9c2c1332f0c174a1869b3de6a6e4ab371d71bc7d65b
   languageName: node
   linkType: hard
 

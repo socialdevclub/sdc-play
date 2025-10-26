@@ -3,7 +3,6 @@ import styled from '@emotion/styled';
 import { commaizeNumber, objectEntries } from '@toss/utils';
 import { useAtomValue } from 'jotai';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { MessageInstance } from 'antd/es/message/interface';
 import InfoBox from '../../../../../../component-presentation/InfoBox';
 import { colorDown, colorUp } from '../../../../../../config/color';
 import { Query } from '../../../../../../hook';
@@ -15,10 +14,9 @@ import StockDrawer from './StockDrawer';
 
 interface Props {
   stockId: string;
-  messageApi: MessageInstance;
 }
 
-const Information = ({ stockId, messageApi }: Props) => {
+const Information = ({ stockId }: Props) => {
   const supabaseSession = useAtomValue(UserStore.supabaseSession);
   const userId = supabaseSession?.user.id;
 
@@ -79,7 +77,6 @@ const Information = ({ stockId, messageApi }: Props) => {
         stockMessages={stockMessages}
         priceData={priceData}
         stockId={stockId}
-        messageApi={messageApi}
       />
     </>
   );
