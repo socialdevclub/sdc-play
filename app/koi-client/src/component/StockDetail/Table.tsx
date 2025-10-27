@@ -20,6 +20,7 @@ const Table = ({ elapsedTime, pov, stockId }: Props) => {
 
   // 주식 가치 계산을 위한 훅 추가
   const { allUserSellPriceDesc } = Query.Stock.useAllUserSellPriceDesc(stockId);
+  const { mutateAsync: updateStock } = Query.Stock.useUpdateStock();
 
   // 각 테이블의 접기/펼치기 상태 관리
   const [firstPriceTableCollapsed, setFirstPriceTableCollapsed] = useState(false);
@@ -167,7 +168,16 @@ const Table = ({ elapsedTime, pov, stockId }: Props) => {
               <StyledTr>
                 <StyledTd isBold>시장</StyledTd>
                 {companyNames.map((company) => (
-                  <StyledTd key={company} isBold>
+                  <StyledTd
+                    key={company}
+                    isBold
+                    onClick={() => {
+                      updateStock({
+                        _id: stockId,
+                        remainingStocks: { ...remainingStocks, [company]: remainingStocks[company] + 1 },
+                      });
+                    }}
+                  >
                     {remainingStocks[company]}
                   </StyledTd>
                 ))}
