@@ -3,7 +3,7 @@ import { Avatar } from 'antd';
 import saveAs from 'file-saver';
 import html2canvas from 'html2canvas';
 import { useAtomValue } from 'jotai';
-import { AlignLeft, Bookmark, LogOut, Share } from 'lucide-react';
+import { AlignLeft, Bookmark, LogOut } from 'lucide-react';
 import { useRef, useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 // import { GetStockUser } from 'shared~type-stock/Response';
@@ -196,84 +196,105 @@ function Result({ stockId }: ResultProps) {
   if (isGuestUser && !hasVisitedInstagram) {
     return (
       <Container>
-        <div css={css`
-          position: relative;
-          height: 100%;
-          display: flex;
-          flex-direction: column;
-          justify-content: center;
-          align-items: center;
-          padding: 40px;
-          overflow: hidden;
-        `}>
-          <div css={css`
+        <div
+          css={css`
             position: relative;
-            z-index: 2;
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(20px);
-            border-radius: 24px;
-            padding: 40px 32px;
-            box-shadow:
-              0 20px 60px rgba(0, 0, 0, 0.1),
-              0 8px 30px rgba(102, 126, 234, 0.2);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            width: 100%;
-            text-align: center;
-            transform: translateY(0);
-            animation: slideInUp 0.8s ease-out;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 40px;
+            overflow: hidden;
+          `}
+        >
+          <div
+            css={css`
+              position: relative;
+              z-index: 2;
+              background: rgba(255, 255, 255, 0.95);
+              backdrop-filter: blur(20px);
+              border-radius: 24px;
+              padding: 40px 32px;
+              box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1), 0 8px 30px rgba(102, 126, 234, 0.2);
+              border: 1px solid rgba(255, 255, 255, 0.3);
+              width: 100%;
+              text-align: center;
+              transform: translateY(0);
+              animation: slideInUp 0.8s ease-out;
 
-            @keyframes slideInUp {
-              from {
-                opacity: 0;
-                transform: translateY(30px);
+              @keyframes slideInUp {
+                from {
+                  opacity: 0;
+                  transform: translateY(30px);
+                }
+                to {
+                  opacity: 1;
+                  transform: translateY(0);
+                }
               }
-              to {
-                opacity: 1;
-                transform: translateY(0);
-              }
-            }
-          `}>
+            `}
+          >
             {/* Trophy Icon */}
-            <div css={css`
-              margin-bottom: 20px;
-              font-size: 48px;
-              animation: bounce 2s infinite;
+            <div
+              css={css`
+                margin-bottom: 20px;
+                font-size: 48px;
+                animation: bounce 2s infinite;
 
-              @keyframes bounce {
-                0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
-                40% { transform: translateY(-10px); }
-                60% { transform: translateY(-5px); }
-              }
-            `}>
+                @keyframes bounce {
+                  0%,
+                  20%,
+                  50%,
+                  80%,
+                  100% {
+                    transform: translateY(0);
+                  }
+                  40% {
+                    transform: translateY(-10px);
+                  }
+                  60% {
+                    transform: translateY(-5px);
+                  }
+                }
+              `}
+            >
               🏆
             </div>
 
             {/* Main Title */}
-            <h2 css={css`
-              font-size: 24px;
-              font-weight: 700;
-              color: #1a1a1a;
-              margin-bottom: 12px;
-              line-height: 1.3;
-            `}>
-              인스타 방문하고<br/>
-              <span css={css`
-                background: linear-gradient(135deg, #667eea, #764ba2);
-                -webkit-background-clip: text;
-                -webkit-text-fill-color: transparent;
-                background-clip: text;
-              `}>
+            <h2
+              css={css`
+                font-size: 24px;
+                font-weight: 700;
+                color: #1a1a1a;
+                margin-bottom: 12px;
+                line-height: 1.3;
+              `}
+            >
+              인스타 방문하고
+              <br />
+              <span
+                css={css`
+                  background: linear-gradient(135deg, #667eea, #764ba2);
+                  -webkit-background-clip: text;
+                  -webkit-text-fill-color: transparent;
+                  background-clip: text;
+                `}
+              >
                 결과 확인하기!
               </span>
             </h2>
 
             {/* Subtitle */}
-            <p css={css`
-              font-size: 16px;
-              color: #666;
-              margin-bottom: 24px;
-              line-height: 1.5;
-            `}>
+            <p
+              css={css`
+                font-size: 16px;
+                color: #666;
+                margin-bottom: 24px;
+                line-height: 1.5;
+              `}
+            >
               소셜데브클럽 인스타그램 팔로우하기
             </p>
 
@@ -291,9 +312,7 @@ function Result({ stockId }: ResultProps) {
                 cursor: pointer;
                 position: relative;
                 overflow: hidden;
-                box-shadow:
-                  0 8px 24px rgba(102, 126, 234, 0.4),
-                  0 4px 12px rgba(118, 75, 162, 0.3);
+                box-shadow: 0 8px 24px rgba(102, 126, 234, 0.4), 0 4px 12px rgba(118, 75, 162, 0.3);
                 transform: translateY(0);
                 transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 
@@ -304,29 +323,33 @@ function Result({ stockId }: ResultProps) {
                   left: -100%;
                   width: 100%;
                   height: 100%;
-                  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+                  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
                   transition: left 0.6s;
                 }
               `}
               onClick={handleInstagramVisit}
             >
-              <span css={css`
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                gap: 8px;
-              `}>
+              <span
+                css={css`
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  gap: 8px;
+                `}
+              >
                 인스타그램 팔로우하고 결과 확인
               </span>
             </button>
 
             {/* Security Note */}
-            <p css={css`
-              font-size: 12px;
-              color: #999;
-              margin-top: 16px;
-              line-height: 1.4;
-            `}>
+            <p
+              css={css`
+                font-size: 12px;
+                color: #999;
+                margin-top: 16px;
+                line-height: 1.4;
+              `}
+            >
               새 창에서 열리며, 개인정보는 수집되지 않습니다
             </p>
           </div>

@@ -9,7 +9,7 @@ test.describe('Booth Mode - Full Integration Test', () => {
 
   test.beforeEach(async ({ page }) => {
     // Set viewport to mobile size
-    await page.setViewportSize({ width: 390, height: 844 });
+    await page.setViewportSize({ height: 844, width: 390 });
   });
 
   test('complete booth mode flow with login and party creation', async ({ page }) => {
@@ -72,7 +72,7 @@ test.describe('Booth Mode - Full Integration Test', () => {
     const context = await page.context().browser()?.newContext();
     if (context) {
       const guestPage = await context.newPage();
-      await guestPage.setViewportSize({ width: 390, height: 844 });
+      await guestPage.setViewportSize({ height: 844, width: 390 });
 
       await test.step('Guest accesses party via direct URL', async () => {
         // Navigate to party URL (simulating QR code scan)
@@ -109,7 +109,7 @@ test.describe('Booth Mode - Full Integration Test', () => {
       await test.step('Test duplicate nickname prevention', async () => {
         // Open another guest page
         const guestPage2 = await context.newPage();
-        await guestPage2.setViewportSize({ width: 390, height: 844 });
+        await guestPage2.setViewportSize({ height: 844, width: 390 });
 
         await guestPage2.goto(`${baseUrl}/party/${partyId}`);
         await guestPage2.click('button:has-text("게스트로 참여")');

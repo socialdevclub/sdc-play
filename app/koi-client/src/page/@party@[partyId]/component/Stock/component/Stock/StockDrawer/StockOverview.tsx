@@ -1,10 +1,11 @@
 import React, { useMemo, useState } from 'react';
 import { useAtomValue } from 'jotai';
+import styled from '@emotion/styled';
 import AnimatedInfoHeader from '../../../../../../../component-presentation/AnimatedInfoHeader';
 import MessageBalloon from '../../../../../../../component-presentation/MessageBalloon';
 import StockLineChart from '../../../../../../../component-presentation/StockLineChart';
 import StockBuyingNotification from '../StockBuyingNotification';
-import ButtonGroup from '../../../../../../../component-presentation/ButtonGroup';
+import Spinner from '../../../../../../../component-presentation/Spinner';
 import { Query } from '../../../../../../../hook';
 import { calculateProfitRate, getAnimalImageSource, renderStockChangesInfo } from '../../../../../../../utils/stock';
 import { UserStore } from '../../../../../../../store';
@@ -49,26 +50,17 @@ const StockOverview: React.FC<StockOverviewProps> = ({
   const supabaseSession = useAtomValue(UserStore.supabaseSession);
   const userId = supabaseSession?.user.id;
 
-  const {
-    refetch: refetchUser,
-    isFreezed,
-    user,
-    getStockStorage,
-  } = Query.Stock.useUser({
+  const { refetch: refetchUser, user } = Query.Stock.useUser({
     stockId,
     userId,
     userRefetchInterval: 500,
   });
 
-  const { onClickSell, isSellLoading, onClickBuy, isBuyLoading } = useTradeStock({
+  const { onClickSell, onClickBuy } = useTradeStock({
     refetchUser,
   });
 
-  const [isCooldown, setIsCooldown] = useState(false);
-  const startCooldown = () => {
-    setIsCooldown(true);
-    setTimeout(() => setIsCooldown(false), 500);
-  };
+  const [loadingButton, setLoadingButton] = useState<'sell' | 'buy' | 'sellAll' | null>(null);
 
   const chartPriceData = useMemo(
     () => (selectedCompany ? priceData[selectedCompany].slice(0, (timeIdx ?? 0) + 1) : [100000]),
@@ -93,7 +85,7 @@ const StockOverview: React.FC<StockOverviewProps> = ({
     [averagePurchasePrice, companiesPrice, selectedCompany, 보유주식],
   );
 
-  const isDisabled = isDisabledOverview || isSellLoading || isBuyLoading || isCooldown;
+  const isDisabled = isDisabledOverview || loadingButton !== null;
 
   if (!stock || !userId) {
     return <></>;
@@ -128,14 +120,15 @@ const StockOverview: React.FC<StockOverviewProps> = ({
         remainingStock={remainingStock}
         maxBuyableCountWithLimit={maxBuyableCountWithLimit}
       />
-      <ButtonGroup
-        buttons={[
-          {
-            backgroundColor: BEARISH_COLOR,
-            disabled: isDisabled || !보유주식.find(({ company }) => company === selectedCompany)?.count,
-            flex: 1,
-            onClick: async () => {
-              startCooldown();
+      <ButtonContainer padding="0 16px 12px 16px">
+        <ButtonRow>
+          <TradeButton
+            backgroundColor={BEARISH_COLOR}
+            disabled={isDisabled || !보유주식.find(({ company }) => company === selectedCompany)?.count}
+            onClick={async () => {
+              setLoadingButton('sell');
+              const startTime = Date.now();
+
               await onClickSell({
                 amount: 1,
                 callback: () => refetchUser(),
@@ -145,15 +138,26 @@ const StockOverview: React.FC<StockOverviewProps> = ({
                 unitPrice: companiesPrice[selectedCompany],
                 userId,
               });
-            },
-            text: '판매하기',
-          },
-          {
-            backgroundColor: BULLISH_COLOR,
-            disabled: isDisabled || !isCanBuy || maxBuyableCountWithLimit === 0,
-            flex: 1,
-            onClick: async () => {
-              startCooldown();
+
+              const elapsed = Date.now() - startTime;
+              if (elapsed < 500) {
+                await new Promise<void>((resolve) => {
+                  setTimeout(() => resolve(), 500 - elapsed);
+                });
+              }
+
+              setLoadingButton(null);
+            }}
+          >
+            {loadingButton === 'sell' ? <Spinner size={20} color="white" /> : '판매하기'}
+          </TradeButton>
+          <TradeButton
+            backgroundColor={BULLISH_COLOR}
+            disabled={isDisabled || !isCanBuy || maxBuyableCountWithLimit === 0}
+            onClick={async () => {
+              setLoadingButton('buy');
+              const startTime = Date.now();
+
               await onClickBuy({
                 amount: 1,
                 callback: () => refetchUser(),
@@ -163,37 +167,92 @@ const StockOverview: React.FC<StockOverviewProps> = ({
                 unitPrice: companiesPrice[selectedCompany],
                 userId,
               });
-            },
-            text: '구매하기',
-          },
-        ]}
-        direction="row"
-        padding="0 16px 12px 16px"
-      />
-      <ButtonGroup
-        buttons={[
-          {
-            backgroundColor: '#374151',
-            disabled: isDisabled || !보유주식.find(({ company }) => company === selectedCompany)?.count,
-            onClick: async () => {
-              startCooldown();
-              await onClickSell({
-                amount: 보유주식.find(({ company }) => company === selectedCompany)?.count ?? 0,
-                callback: () => refetchUser(),
-                company: selectedCompany,
-                round: stock.round,
-                stockId,
-                unitPrice: companiesPrice[selectedCompany],
-                userId,
+
+              const elapsed = Date.now() - startTime;
+              if (elapsed < 500) {
+                await new Promise<void>((resolve) => {
+                  setTimeout(() => resolve(), 500 - elapsed);
+                });
+              }
+
+              setLoadingButton(null);
+            }}
+          >
+            {loadingButton === 'buy' ? <Spinner size={20} color="white" /> : '구매하기'}
+          </TradeButton>
+        </ButtonRow>
+      </ButtonContainer>
+      <ButtonContainer padding="0 16px 12px 16px">
+        <TradeButton
+          backgroundColor="#374151"
+          disabled={isDisabled || !보유주식.find(({ company }) => company === selectedCompany)?.count}
+          onClick={async () => {
+            setLoadingButton('sellAll');
+            const startTime = Date.now();
+
+            await onClickSell({
+              amount: 보유주식.find(({ company }) => company === selectedCompany)?.count ?? 0,
+              callback: () => refetchUser(),
+              company: selectedCompany,
+              round: stock.round,
+              stockId,
+              unitPrice: companiesPrice[selectedCompany],
+              userId,
+            });
+
+            const elapsed = Date.now() - startTime;
+            if (elapsed < 500) {
+              await new Promise<void>((resolve) => {
+                setTimeout(() => resolve(), 500 - elapsed);
               });
-            },
-            text: '모두 팔기',
-          },
-        ]}
-        padding="0 16px 12px 16px"
-      />
+            }
+
+            setLoadingButton(null);
+          }}
+        >
+          {loadingButton === 'sellAll' ? <Spinner size={20} color="white" /> : '모두 팔기'}
+        </TradeButton>
+      </ButtonContainer>
     </>
   );
 };
 
 export default StockOverview;
+
+const ButtonContainer = styled.div<{ padding: string }>`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: ${(props) => props.padding};
+`;
+
+const ButtonRow = styled.div`
+  width: 100%;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+`;
+
+const TradeButton = styled.button<{ backgroundColor: string }>`
+  width: 100%;
+  height: 48px;
+  background-color: ${(props) => props.backgroundColor};
+  color: white;
+  border-radius: 4px;
+  border: none;
+  font-family: DungGeunMo;
+  font-size: 14px;
+  line-height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+`;

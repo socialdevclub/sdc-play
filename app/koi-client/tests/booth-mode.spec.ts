@@ -2,10 +2,9 @@ import { test, expect } from '@playwright/test';
 
 // Test booth mode functionality with party-restricted access
 test.describe('Booth Mode - Party Restricted Access', () => {
-
   test.beforeEach(async ({ page }) => {
     // Set viewport to mobile size for better testing
-    await page.setViewportSize({ width: 390, height: 844 });
+    await page.setViewportSize({ height: 844, width: 390 });
   });
 
   test('should show normal login when accessing root URL without partyId', async ({ page }) => {
@@ -120,10 +119,9 @@ test.describe('Booth Mode - Party Restricted Access', () => {
 });
 
 test.describe('Booth Mode - Guest Flow', () => {
-
   test('complete guest participation flow', async ({ page }) => {
     // Set mobile viewport
-    await page.setViewportSize({ width: 390, height: 844 });
+    await page.setViewportSize({ height: 844, width: 390 });
 
     // Go to party URL
     await page.goto('http://localhost:5173/party/test-party-123');

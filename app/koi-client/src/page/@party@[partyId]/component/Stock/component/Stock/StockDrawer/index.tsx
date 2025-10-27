@@ -9,6 +9,7 @@ import { UserStore } from '../../../../../../../store';
 import { useTradeStock } from '../../../../../hook/useTradeStock';
 import StockTransaction from './StockTransaction';
 import StockOverviewRealism from './StockOverviewRealism';
+import StockOverview from './StockOverview';
 
 export type StockDrawerState = 'OVERVIEW' | 'BUY' | 'SELL';
 
@@ -130,8 +131,25 @@ const StockDrawer = ({ drawerOpen, handleCloseDrawer, selectedCompany, stockMess
       {(() => {
         switch (drawerState) {
           case 'OVERVIEW':
+            if (stock.gameMode === 'realism') {
+              return (
+                <StockOverviewRealism
+                  stockId={stockId}
+                  selectedCompany={selectedCompany}
+                  stockMessages={stockMessages}
+                  currentStockCount={currentStockCount}
+                  priceData={priceData}
+                  remainingStock={remainingStock}
+                  maxBuyableCountWithLimit={maxBuyableCountWithLimit}
+                  isDisabled={isDisabled}
+                  isCanBuy={isCanBuy}
+                  setDrawerState={setDrawerState}
+                  보유주식={보유주식}
+                />
+              );
+            }
             return (
-              <StockOverviewRealism
+              <StockOverview
                 stockId={stockId}
                 selectedCompany={selectedCompany}
                 stockMessages={stockMessages}
@@ -141,10 +159,10 @@ const StockDrawer = ({ drawerOpen, handleCloseDrawer, selectedCompany, stockMess
                 maxBuyableCountWithLimit={maxBuyableCountWithLimit}
                 isDisabled={isDisabled}
                 isCanBuy={isCanBuy}
-                setDrawerState={setDrawerState}
                 보유주식={보유주식}
               />
             );
+
           default:
             return (
               <StockTransaction
