@@ -194,6 +194,20 @@ export default function StockDetail({ stockId }: Props) {
                     }
                   }}
                 />
+                <StyledInput
+                  placeholder={`개인 최대 보유 주식 수 (${stock?.maxPersonalStockCount ?? '제한없음'})`}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter') {
+                      const { value } = event.currentTarget;
+                      if (value === '' || !isNaN(Number(value))) {
+                        mutateUpdateGame({
+                          _id: stockId,
+                          maxPersonalStockCount: value === '' ? undefined : Number(value),
+                        });
+                      }
+                    }
+                  }}
+                />
               </ControlGroup>
             )}
           </PanelSection>
