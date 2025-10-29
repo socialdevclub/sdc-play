@@ -4,6 +4,7 @@ import { getDateDistance } from '@toss/date';
 import dayjs from 'dayjs';
 import { UserRepository } from './user/user.repository';
 import { StockRepository } from './stock.repository';
+import { Stock } from './stock.schema';
 
 @Injectable()
 export class StockProcessor {
@@ -41,7 +42,7 @@ export class StockProcessor {
     body: Request.PostBuyStock,
     attributes?: { queueMessageId?: string },
   ): Promise<Response.Common> {
-    const { userId, company, amount, idx: idxFromRequest } = body;
+    const { userId, company, amount, idx: idxFromRequest, isChangeStockPrice = false } = body;
 
     try {
       // 필요한 데이터 조회
@@ -151,6 +152,11 @@ export class StockProcessor {
         [company]: updatedCompanyInfo,
       };
 
+      const updateStock = { remainingStocks: updatedRemainingStocks } as Partial<Stock>;
+      if (isChangeStockPrice) {
+        updateStock.companies = updatedCompanies;
+      }
+
       await Promise.all([
         this.userRepository.updateOneWithAdd(
           { stockId, userId },
@@ -171,10 +177,7 @@ export class StockProcessor {
         //     [`remainingStocks.${company}`]: -amount,
         //   },
         // ),
-        this.stockRepository.updateOne(stockId, {
-          companies: updatedCompanies,
-          remainingStocks: updatedRemainingStocks,
-        }),
+        this.stockRepository.updateOne(stockId, updateStock),
       ]);
 
       return {
@@ -196,7 +199,7 @@ export class StockProcessor {
     body: Request.PostSellStock,
     attributes?: { queueMessageId?: string },
   ): Promise<Response.Common> {
-    const { userId, company, amount, idx: idxFromRequest } = body;
+    const { userId, company, amount, idx: idxFromRequest, isChangeStockPrice = false } = body;
 
     try {
       // 필요한 데이터 조회
@@ -311,6 +314,11 @@ export class StockProcessor {
         [company]: updatedCompanyInfo,
       };
 
+      const updateStock = { remainingStocks: updatedRemainingStocks } as Partial<Stock>;
+      if (isChangeStockPrice) {
+        updateStock.companies = updatedCompanies;
+      }
+
       await Promise.all([
         this.userRepository.updateOneWithAdd(
           { stockId, userId },
@@ -331,10 +339,7 @@ export class StockProcessor {
         //     [`remainingStocks.${company}`]: amount,
         //   },
         // ),
-        this.stockRepository.updateOne(stockId, {
-          companies: updatedCompanies,
-          remainingStocks: updatedRemainingStocks,
-        }),
+        this.stockRepository.updateOne(stockId, updateStock),
       ]);
 
       return {

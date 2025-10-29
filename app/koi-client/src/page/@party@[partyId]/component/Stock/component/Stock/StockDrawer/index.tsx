@@ -47,7 +47,9 @@ const StockDrawer = ({ drawerOpen, handleCloseDrawer, selectedCompany, stockMess
   });
   const { data: stock, companiesPrice, timeIdx } = Query.Stock.useQueryStock(stockId);
   const { isBuyLoading, isSellLoading, onClickBuy, onClickSell } = useTradeStock({
+    isChangeStockPrice: false,
     refetchUser,
+    timeIdx: timeIdx ?? NaN,
   });
 
   const 보유주식 = useMemo(() => {

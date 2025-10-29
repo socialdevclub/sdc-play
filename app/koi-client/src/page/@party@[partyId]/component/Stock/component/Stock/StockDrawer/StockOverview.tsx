@@ -50,16 +50,18 @@ const StockOverview: React.FC<StockOverviewProps> = ({
     userRefetchInterval: 500,
   });
 
-  const { onClickSell, onClickBuy } = useTradeStock({
-    refetchUser,
-  });
-
-  const [loadingButton, setLoadingButton] = useState<'sell' | 'buy' | 'sellAll' | null>(null);
-
   useEffect(() => {
     // 주가 변동 반영
     refetchStock();
   }, [refetchStock]);
+
+  const { onClickSell, onClickBuy } = useTradeStock({
+    isChangeStockPrice: true,
+    refetchUser,
+    timeIdx: timeIdx ?? NaN,
+  });
+
+  const [loadingButton, setLoadingButton] = useState<'sell' | 'buy' | 'sellAll' | null>(null);
 
   const chartPriceData = useMemo(
     () => (selectedCompany ? priceData[selectedCompany].slice(0, (timeIdx ?? 0) + 1) : [100000]),
@@ -134,7 +136,6 @@ const StockOverview: React.FC<StockOverviewProps> = ({
                 company: selectedCompany,
                 round: stock.round,
                 stockId,
-                unitPrice: companiesPrice[selectedCompany],
                 userId,
               });
 
@@ -163,7 +164,6 @@ const StockOverview: React.FC<StockOverviewProps> = ({
                 company: selectedCompany,
                 round: stock.round,
                 stockId,
-                unitPrice: companiesPrice[selectedCompany],
                 userId,
               });
 
@@ -195,7 +195,6 @@ const StockOverview: React.FC<StockOverviewProps> = ({
               company: selectedCompany,
               round: stock.round,
               stockId,
-              unitPrice: companiesPrice[selectedCompany],
               userId,
             });
 

@@ -20,6 +20,7 @@ export type PostBuyStock = {
   amount: number;
   round: number;
   idx: number;
+  isChangeStockPrice?: boolean;
   queueUniqueId?: string;
 };
 
@@ -35,6 +36,7 @@ export type PostSellStock = {
   amount: number;
   round: number;
   idx: number;
+  isChangeStockPrice?: boolean;
   queueUniqueId?: string;
 };
 

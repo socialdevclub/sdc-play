@@ -84,7 +84,6 @@ const StockTransaction: React.FC<StockTransactionProps> = ({
         company: selectedCompany,
         round: stock.round,
         stockId,
-        unitPrice: perPrice,
         userId,
       });
     } else if (type === 'SELL') {
@@ -93,7 +92,6 @@ const StockTransaction: React.FC<StockTransactionProps> = ({
         company: selectedCompany,
         round: stock.round,
         stockId,
-        unitPrice: perPrice,
         userId,
       });
     }

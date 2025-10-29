@@ -3,6 +3,8 @@ import { Query } from '../../../hook';
 
 interface Props {
   messageApi?: MessageInstance;
+  isChangeStockPrice: boolean;
+  timeIdx: number;
   refetchUser: () => void;
 }
 
@@ -18,7 +20,6 @@ interface BuyStockProps {
   company: string;
   round: number;
   stockId: string;
-  unitPrice: number;
   userId: string;
   callback?: () => void;
 }
@@ -28,7 +29,6 @@ interface SellStockProps {
   company: string;
   round: number;
   stockId: string;
-  unitPrice: number;
   userId: string;
   callback?: () => void;
 }
@@ -39,20 +39,20 @@ interface SellStockProps {
  * @param stockStorages 현재 내가 가진 주식들에 대한 정보
  * @param messageApi 메시지 API
  */
-export const useTradeStock = ({ messageApi, refetchUser }: Props): ReturnType => {
+export const useTradeStock = ({ timeIdx, messageApi, isChangeStockPrice, refetchUser }: Props): ReturnType => {
   const { mutateAsync: buyStock, isLoading: isBuyLoading } = Query.Stock.useBuyStock();
   const { mutateAsync: sellStock, isLoading: isSellLoading } = Query.Stock.useSellStock();
 
-  const onClickBuy = async ({
-    amount,
-    company,
-    round,
-    stockId,
-    unitPrice,
-    userId,
-    callback,
-  }: BuyStockProps): Promise<void> => {
-    const { status, message } = await buyStock({ amount, company, round, stockId, unitPrice, userId });
+  const onClickBuy = async ({ amount, company, round, stockId, userId, callback }: BuyStockProps): Promise<void> => {
+    const { status, message } = await buyStock({
+      amount,
+      company,
+      idx: timeIdx,
+      isChangeStockPrice,
+      round,
+      stockId,
+      userId,
+    });
     refetchUser();
 
     const isSuccess = status === 200;
@@ -70,16 +70,16 @@ export const useTradeStock = ({ messageApi, refetchUser }: Props): ReturnType =>
     }
   };
 
-  const onClickSell = async ({
-    amount,
-    company,
-    round,
-    stockId,
-    unitPrice,
-    userId,
-    callback,
-  }: SellStockProps): Promise<void> => {
-    const { status, message } = await sellStock({ amount, company, round, stockId, unitPrice, userId });
+  const onClickSell = async ({ amount, company, round, stockId, userId, callback }: SellStockProps): Promise<void> => {
+    const { status, message } = await sellStock({
+      amount,
+      company,
+      idx: timeIdx,
+      isChangeStockPrice,
+      round,
+      stockId,
+      userId,
+    });
     refetchUser();
 
     const isSuccess = status === 200;
