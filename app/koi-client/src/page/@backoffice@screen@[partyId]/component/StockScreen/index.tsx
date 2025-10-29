@@ -27,7 +27,7 @@ const getTimeDistanceWithCurrent = (date: Date) => {
 export default function StockScreen({ party }: Props) {
   const { data: stock } = Query.Stock.useQueryStock(party.activityName, {
     keepPreviousData: false,
-    refetchInterval: 500,
+    refetchInterval: 300,
   });
   const { mutateAsync: mutateUpdateStock } = Query.Stock.useUpdateStock();
   const { trades } = useTradeDetection(stock?._id || '');
