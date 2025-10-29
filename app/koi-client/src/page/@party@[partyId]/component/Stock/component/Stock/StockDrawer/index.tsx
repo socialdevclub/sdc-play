@@ -45,13 +45,7 @@ const StockDrawer = ({ drawerOpen, handleCloseDrawer, selectedCompany, stockMess
     userId,
     userRefetchInterval: 500,
   });
-  const {
-    data: stock,
-    companiesPrice,
-    timeIdx,
-  } = Query.Stock.useQueryStock(stockId, {
-    refetchInterval: Number.POSITIVE_INFINITY,
-  });
+  const { data: stock, companiesPrice, timeIdx } = Query.Stock.useQueryStock(stockId);
   const { isBuyLoading, isSellLoading, onClickBuy, onClickSell } = useTradeStock({
     refetchUser,
   });

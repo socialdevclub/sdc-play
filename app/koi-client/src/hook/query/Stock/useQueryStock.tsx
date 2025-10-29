@@ -20,7 +20,7 @@ const useQueryStock = (stockId: string | undefined, options?: Options) => {
     },
     reactQueryOption: {
       enabled: !!stockId,
-      refetchInterval: 1500,
+      refetchInterval: 500,
       select: (data) => {
         data.maxPersonalStockCount = data.maxPersonalStockCount ?? Infinity;
         data.maxStockHintCount = data.maxStockHintCount ?? Infinity;

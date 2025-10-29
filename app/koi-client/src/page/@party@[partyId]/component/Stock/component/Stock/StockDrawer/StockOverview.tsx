@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useAtomValue } from 'jotai';
 import styled from '@emotion/styled';
 import AnimatedInfoHeader from '../../../../../../../component-presentation/AnimatedInfoHeader';
@@ -40,13 +40,7 @@ const StockOverview: React.FC<StockOverviewProps> = ({
   isCanBuy,
   보유주식,
 }) => {
-  const {
-    data: stock,
-    companiesPrice,
-    timeIdx,
-  } = Query.Stock.useQueryStock(stockId, {
-    refetchInterval: Number.POSITIVE_INFINITY,
-  });
+  const { data: stock, companiesPrice, timeIdx, refetch: refetchStock } = Query.Stock.useQueryStock(stockId);
   const supabaseSession = useAtomValue(UserStore.supabaseSession);
   const userId = supabaseSession?.user.id;
 
@@ -61,6 +55,11 @@ const StockOverview: React.FC<StockOverviewProps> = ({
   });
 
   const [loadingButton, setLoadingButton] = useState<'sell' | 'buy' | 'sellAll' | null>(null);
+
+  useEffect(() => {
+    // 주가 변동 반영
+    refetchStock();
+  }, [refetchStock]);
 
   const chartPriceData = useMemo(
     () => (selectedCompany ? priceData[selectedCompany].slice(0, (timeIdx ?? 0) + 1) : [100000]),
