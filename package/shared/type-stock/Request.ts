@@ -18,8 +18,8 @@ export type PostBuyStock = {
   userId: string;
   company: string;
   amount: number;
-  unitPrice: number;
   round: number;
+  idx: number;
   queueUniqueId?: string;
 };
 
@@ -33,8 +33,8 @@ export type PostSellStock = {
   userId: string;
   company: string;
   amount: number;
-  unitPrice: number;
   round: number;
+  idx: number;
   queueUniqueId?: string;
 };
 

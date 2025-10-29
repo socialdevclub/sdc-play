@@ -13,12 +13,35 @@ export class StockProcessor {
     private readonly stockRepository: StockRepository,
   ) {}
 
+  /**
+   * 시장 영향 시스템 - 거래량에 따른 가격 변동 적용
+   * @param currentPrice 현재 가격
+   * @param action 매수/매도 액션
+   * @param amount 거래량
+   * @returns 시장 영향이 적용된 새로운 가격
+   */
+  private applyMarketImpact(currentPrice: number, action: 'BUY' | 'SELL', amount: number): number {
+    // 1. 영향도 계산 (주당 0.2%, 최대 30% 제한)
+    const rawImpact = amount * 0.002;
+    const cappedImpact = Math.min(rawImpact, 0.3);
+    const finalImpact = action === 'BUY' ? cappedImpact : -cappedImpact;
+
+    // 2. 새 가격 계산
+    const newPrice = currentPrice * (1 + finalImpact);
+
+    // 3. 절대 하한선 적용 (100원)
+    const boundedPrice = Math.max(100, newPrice);
+
+    // 4. 100원 단위 즉시 반올림
+    return Math.round(boundedPrice / 100) * 100;
+  }
+
   async buyStock(
     stockId: string,
     body: Request.PostBuyStock,
     attributes?: { queueMessageId?: string },
   ): Promise<Response.Common> {
-    const { userId, company, amount, unitPrice } = body;
+    const { userId, company, amount, idx: idxFromRequest } = body;
 
     try {
       // 필요한 데이터 조회
@@ -64,8 +87,8 @@ export class StockProcessor {
       if (user.money < totalPrice) {
         throw new Error('돈이 부족합니다');
       }
-      if (companyPrice !== unitPrice) {
-        throw new Error('주가가 변동되었습니다. 다시 시도해주세요');
+      if (idx !== idxFromRequest) {
+        throw new HttpException('턴이 변경되었습니다. 다시 시도해주세요', HttpStatus.CONFLICT);
       }
 
       const stockStorage = user.stockStorages.find((v) => v.companyName === company);
@@ -113,6 +136,21 @@ export class StockProcessor {
         moneyHistory[i] = user.money - totalPrice;
       }
 
+      // 시장 영향 적용: 매수 후 가격 상승
+      const newPrice = this.applyMarketImpact(companyPrice, 'BUY', amount);
+
+      // 현재 시간 인덱스에 대해 가격 업데이트
+      const updatedCompanyInfo = [...companyInfo];
+      updatedCompanyInfo[idx] = {
+        ...updatedCompanyInfo[idx],
+        가격: newPrice,
+      };
+
+      const updatedCompanies = {
+        ...companies,
+        [company]: updatedCompanyInfo,
+      };
+
       await Promise.all([
         this.userRepository.updateOneWithAdd(
           { stockId, userId },
@@ -133,7 +171,10 @@ export class StockProcessor {
         //     [`remainingStocks.${company}`]: -amount,
         //   },
         // ),
-        this.stockRepository.updateOne(stockId, { remainingStocks: updatedRemainingStocks }),
+        this.stockRepository.updateOne(stockId, {
+          companies: updatedCompanies,
+          remainingStocks: updatedRemainingStocks,
+        }),
       ]);
 
       return {
@@ -155,7 +196,7 @@ export class StockProcessor {
     body: Request.PostSellStock,
     attributes?: { queueMessageId?: string },
   ): Promise<Response.Common> {
-    const { userId, company, amount, unitPrice } = body;
+    const { userId, company, amount, idx: idxFromRequest } = body;
 
     try {
       // 필요한 데이터 조회
@@ -204,8 +245,8 @@ export class StockProcessor {
       const companyPrice = companyInfo[idx].가격;
       const totalPrice = companyPrice * amount;
 
-      if (companyPrice !== unitPrice) {
-        throw new HttpException('주가가 변동되었습니다. 다시 시도해주세요', HttpStatus.CONFLICT);
+      if (idx !== idxFromRequest) {
+        throw new HttpException('턴이 변경되었습니다. 다시 시도해주세요', HttpStatus.CONFLICT);
       }
 
       // 필요한 로그 확인
@@ -255,6 +296,21 @@ export class StockProcessor {
         moneyHistory[i] = user.money + totalPrice;
       }
 
+      // 시장 영향 적용: 매도 후 가격 하락
+      const newPrice = this.applyMarketImpact(companyPrice, 'SELL', amount);
+
+      // 현재 시간 인덱스에 대해 가격 업데이트
+      const updatedCompanyInfo = [...companyInfo];
+      updatedCompanyInfo[idx] = {
+        ...updatedCompanyInfo[idx],
+        가격: newPrice,
+      };
+
+      const updatedCompanies = {
+        ...companies,
+        [company]: updatedCompanyInfo,
+      };
+
       await Promise.all([
         this.userRepository.updateOneWithAdd(
           { stockId, userId },
@@ -275,7 +331,10 @@ export class StockProcessor {
         //     [`remainingStocks.${company}`]: amount,
         //   },
         // ),
-        this.stockRepository.updateOne(stockId, { remainingStocks: updatedRemainingStocks }),
+        this.stockRepository.updateOne(stockId, {
+          companies: updatedCompanies,
+          remainingStocks: updatedRemainingStocks,
+        }),
       ]);
 
       return {
