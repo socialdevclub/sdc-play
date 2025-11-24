@@ -254,9 +254,11 @@ const InformationItems = ({ stockId, onClick, myInfos }: InformationItemsProps) 
 
       <RecommendedPartners stockId={stockId} /> */}
 
-      <StickyBottom>
-        <DrawStockInfo stockId={stockId} />
-      </StickyBottom>
+      {stock.gameMode === 'stock' && (
+        <StickyBottom>
+          <DrawStockInfo stockId={stockId} />
+        </StickyBottom>
+      )}
     </Container>
   );
 };

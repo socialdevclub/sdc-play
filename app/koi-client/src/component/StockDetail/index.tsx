@@ -292,7 +292,7 @@ export default function StockDetail({ stockId }: Props) {
                 >
                   게임 초기화
                 </ControlButton>
-                <ControlButton
+                {/* <ControlButton
                   onClick={() => {
                     mutateInitStock({
                       isCustomCompanies: false,
@@ -315,7 +315,7 @@ export default function StockDetail({ stockId }: Props) {
                   color="warning"
                 >
                   주식 초기화
-                </ControlButton>
+                </ControlButton> */}
                 <ControlButton
                   onClick={() => {
                     mutateUpdateGame({
@@ -469,7 +469,7 @@ export default function StockDetail({ stockId }: Props) {
                     </TradePrice>
                   </DebugTradeRow>
 
-                  <DebugTradeButtonGroup>
+                  {/* <DebugTradeButtonGroup>
                     <BuyButton
                       disabled={!selectedUser || !selectedCompany}
                       onClick={() => {
@@ -504,7 +504,7 @@ export default function StockDetail({ stockId }: Props) {
                     >
                       매도
                     </SellButton>
-                  </DebugTradeButtonGroup>
+                  </DebugTradeButtonGroup> */}
                 </DebugTradeContainer>
               )}
             </PanelSection>

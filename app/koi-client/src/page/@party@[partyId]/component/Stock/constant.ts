@@ -122,6 +122,7 @@ export const 쀼머니게임_회사 = {
 };
 
 export const 게임모드 = {
+  DALTO: 'dalto',
   REALISM: 'realism',
   STOCK: 'stock',
 } as const;

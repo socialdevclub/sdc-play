@@ -118,7 +118,10 @@ export class UserRepository {
     }
   }
 
-  async findOne(filter: Pick<StockUserSchema, 'stockId' | 'userId'>): Promise<StockUserSchema | null> {
+  async findOne(
+    filter: Pick<StockUserSchema, 'stockId' | 'userId'>,
+    options?: { consistentRead?: boolean },
+  ): Promise<StockUserSchema | null> {
     try {
       const { stockId, userId } = filter;
 
@@ -128,6 +131,7 @@ export class UserRepository {
 
       // 기본 키(stockId, userId)로 조회
       const command = new GetCommand({
+        ConsistentRead: options?.consistentRead,
         Key: {
           stockId,
           userId,

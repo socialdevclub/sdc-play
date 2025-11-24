@@ -56,7 +56,7 @@ const StockOverview: React.FC<StockOverviewProps> = ({
   }, [refetchStock]);
 
   const { onClickSell, onClickBuy } = useTradeStock({
-    isChangeStockPrice: true,
+    isChangeStockPrice: stock?.gameMode === 'stock',
     refetchUser,
     timeIdx: timeIdx ?? NaN,
   });

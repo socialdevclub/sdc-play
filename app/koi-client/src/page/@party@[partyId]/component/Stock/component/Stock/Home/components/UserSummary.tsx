@@ -13,38 +13,44 @@ const TITLE_MAP = {
     // 총액, 총자산
     // (잔액 + 주식가치)
     // (user.money + allSellPrice)
-    [게임모드.STOCK]: '모두 팔고 난 뒤의 금액',
-    [게임모드.REALISM]: '총자산', // 사용 안함
+    [게임모드.DALTO]: '총 자산',
+    [게임모드.STOCK]: '총 자산',
+    [게임모드.REALISM]: '총 자산', // 사용 안함
   },
   모두팔고난뒤의순이익: {
     // 초기금액 대비 현재 순수익률
     // (moneyRatio)
-    [게임모드.STOCK]: '모두 팔고 난 뒤의 순이익',
+    [게임모드.DALTO]: '총 이익',
+    [게임모드.STOCK]: '총 이익',
     [게임모드.REALISM]: '총 이익', // 사용 안함
   },
   잔액: {
     // 현재 보유금(현금)
     // (user.money)
-    [게임모드.STOCK]: '잔액',
+    [게임모드.DALTO]: '현금',
+    [게임모드.STOCK]: '현금',
     [게임모드.REALISM]: '주문 가능 금액',
   },
   주식가치: {
     // 현재 총 보유 주식 가치
     // (allSellPrice)
-    [게임모드.STOCK]: '주식 가치',
+    [게임모드.DALTO]: '평가금',
+    [게임모드.STOCK]: '평가금',
     [게임모드.REALISM]: '평가금',
   },
   투자비용: {
     // 현재 보유 중인 주식의 총 구매 비용
     // (totalInvestment)
-    [게임모드.STOCK]: '총 투자 비용', // 사용 안함
+    [게임모드.DALTO]: '매입금',
+    [게임모드.STOCK]: '매입금', // 사용 안함
     [게임모드.REALISM]: '매입금',
   },
   현재주식수익: {
     // 보유 주식의 투자 비용 대비 순수익금, 순수익률
     // (주식가치 - 투자비용) & (주식가치/투자비용 * 100)
     // (totalProfitLoss) & (totalProfitLoss / totalInvestment) * 100)
-    [게임모드.STOCK]: '현재 주식 수익', // 사용 안함
+    [게임모드.DALTO]: '순수익',
+    [게임모드.STOCK]: '순수익', // 사용 안함
     [게임모드.REALISM]: '순수익',
   },
 } as const;
@@ -117,7 +123,7 @@ const UserSummary = ({
 
   return (
     <>
-      {stock.gameMode === 'stock' && <MyLevel moneyRatio={moneyRatio} initialMoney={stock.initialMoney} />}
+      {stock.gameMode !== 'realism' && <MyLevel moneyRatio={moneyRatio} initialMoney={stock.initialMoney} />}
 
       {/* 잔액 카드 */}
       <Card
@@ -127,7 +133,7 @@ const UserSummary = ({
         rightComponent={getRankComponent(stock.isVisibleRank, getMoneyRank())}
       />
 
-      {/* 주식 가치 카드 */}
+      {/* 평가금 */}
       <Card
         title={TITLE_MAP.주식가치[stock.gameMode]}
         value={formatCurrency(allSellPrice)}
@@ -135,8 +141,7 @@ const UserSummary = ({
         rightComponent={getRankComponent(stock.isVisibleRank, getStockValueRank())}
       />
 
-      {/* STOCK 게임모드 전용 카드들 */}
-      {stock.gameMode === 게임모드.STOCK && (
+      {stock.gameMode !== 'realism' && (
         <>
           <Card
             title={TITLE_MAP.모두팔고난뒤의금액[stock.gameMode]}
@@ -151,7 +156,6 @@ const UserSummary = ({
         </>
       )}
 
-      {/* REALISM 게임모드 전용 카드들 */}
       {stock.gameMode === 게임모드.REALISM && (
         <>
           <Card title={TITLE_MAP.투자비용[stock.gameMode]} value={formatCurrency(totalInvestment)} />

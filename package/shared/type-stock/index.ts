@@ -52,6 +52,7 @@ export type CompanyInfo = {
 };
 
 const StockGameMode = {
+  DALTO: 'dalto',
   REALISM: 'realism',
   STOCK: 'stock',
 } as const;

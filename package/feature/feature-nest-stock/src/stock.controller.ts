@@ -63,6 +63,10 @@ export class StockController {
 
   @Post('/init')
   initStock(@Query('stockId') stockId: string, @Body() body: Request.PostStockInit): Promise<StockSchema> {
+    console.log('🚀 ~ StockController ~ initStock ~ body:', body);
+    if (body.gameMode === 'dalto') {
+      return this.stockService.initStockDalto(stockId, body);
+    }
     return this.stockService.initStock(stockId, body);
   }
 

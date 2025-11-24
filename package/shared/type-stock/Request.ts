@@ -72,7 +72,7 @@ export type PostSetStockPhase = {
   phase: StockPhase;
 };
 
-export type PostStockInit = Pick<StockSchema, 'maxStockHintCount'> & { maxMarketStockCount: number } & (
+export type PostStockInit = Pick<StockSchema, 'maxStockHintCount' | 'gameMode'> & { maxMarketStockCount: number } & (
     | {
         isCustomCompanies?: true;
         companies: Record<string, Pick<CompanyInfo, '가격'>[]>;

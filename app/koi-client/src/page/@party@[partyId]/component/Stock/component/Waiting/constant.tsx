@@ -74,3 +74,9 @@ export const maxPersonalStockCountMenuItems: MenuProps['items'] = [
     label: <DropdownItem>직접 입력</DropdownItem>,
   },
 ];
+
+export const gameModeMenuItems: MenuProps['items'] = [
+  { key: 'stock', label: <DropdownItem>주식게임</DropdownItem> },
+  { key: 'realism', label: <DropdownItem>쀼머니게임</DropdownItem> },
+  { key: 'dalto', label: <DropdownItem>달토</DropdownItem> },
+];

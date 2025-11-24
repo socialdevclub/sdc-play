@@ -37,6 +37,124 @@ export class StockProcessor {
     return Math.round(boundedPrice / 100) * 100;
   }
 
+  private async updateDaltoStockPrice(stockId: string, company: string, idx: number): Promise<void> {
+    const nextRound = idx + 1;
+    if (company.includes('2배')) {
+      return;
+    }
+    if (nextRound === 3 || nextRound === 6 || nextRound === 9) {
+      return;
+    }
+
+    const promise = [];
+    const updatedUserIds = new Set<string>();
+
+    const [stock, users] = await Promise.all([
+      this.stockRepository.findOneById(stockId, { consistentRead: true }),
+      this.userRepository.find({ stockId }, { consistentRead: true }),
+    ]);
+    if (company !== '종합지수') {
+      const totalStockCount = users.reduce((acc, user) => {
+        const stockStorage = user.stockStorages.find((stockStorage) => stockStorage.companyName === company);
+        return acc + stockStorage.stockCountHistory[idx];
+      }, 0);
+      // 다음 라운드 가격 업데이트 규칙
+      // 현재 라운드 가격에서 totalStockCount 1% 만큼 증감
+      if (idx % 3 !== 2) {
+        stock.companies[company][idx + 1].가격 =
+          Math.round((stock.companies[company][idx].가격 * (1 + totalStockCount * 0.01)) / 100) * 100;
+        if (idx % 3 === 0) {
+          stock.companies[company][idx + 2].가격 =
+            Math.round((stock.companies[company][idx].가격 * (1 + totalStockCount * 0.01)) / 100) * 100;
+        }
+      }
+
+      if (stock.companies[`${company} 2배`]) {
+        if (idx % 3 !== 2) {
+          stock.companies[`${company} 2배`][idx + 1].가격 =
+            Math.round((stock.companies[`${company} 2배`][idx].가격 * (1 + totalStockCount * 0.02)) / 100) * 100;
+          if (idx % 3 === 0) {
+            stock.companies[`${company} 2배`][idx + 2].가격 =
+              Math.round((stock.companies[`${company} 2배`][idx].가격 * (1 + totalStockCount * 0.02)) / 100) * 100;
+          }
+        }
+
+        if (stock.companies[`${company} 2배`][idx + 1].가격 <= 0) {
+          stock.companies[company][idx].가격 = stock.companies[company][idx + 1].가격;
+          stock.companies[`${company} 2배`][idx + 1].가격 = stock.companies[`${company} 2배`][idx].가격;
+          users.forEach((user) => {
+            const stockStorage = user.stockStorages.find(
+              (stockStorage) => stockStorage.companyName === `${company} 2배`,
+            );
+            if (stockStorage) {
+              stockStorage.stockAveragePrice = 0;
+              stockStorage.stockAveragePriceHistory[idx] = 0;
+              stockStorage.stockCountCurrent = 0;
+              stockStorage.stockCountHistory[idx] = 0;
+              updatedUserIds.add(user.userId);
+            }
+          });
+        }
+        if (stock.companies[company][idx + 1].가격 <= 0) {
+          stock.companies[company][idx].가격 = stock.companies[company][idx + 1].가격;
+          users.forEach((user) => {
+            const stockStorage = user.stockStorages.find((stockStorage) => stockStorage.companyName === company);
+            if (stockStorage) {
+              stockStorage.stockAveragePrice = 0;
+              stockStorage.stockAveragePriceHistory[idx] = 0;
+              stockStorage.stockCountCurrent = 0;
+              stockStorage.stockCountHistory[idx] = 0;
+              updatedUserIds.add(user.userId);
+            }
+          });
+        }
+      }
+    }
+
+    if (stock.companies['종합지수']) {
+      const totalStockCount = users.reduce((acc, user) => {
+        const stockCount = user.stockStorages.reduce((acc, stockStorage) => {
+          if (stockStorage.companyName === '종합지수' || stockStorage.companyName.includes('2배')) {
+            return acc;
+          }
+          return acc + stockStorage.stockCountCurrent;
+        }, 0);
+        return acc + stockCount;
+      }, 0);
+      if (idx % 3 !== 2) {
+        stock.companies['종합지수'][idx + 1].가격 =
+          Math.round((stock.companies['종합지수'][idx].가격 * (1 + totalStockCount * 0.01)) / 100) * 100;
+        if (idx % 3 === 0) {
+          stock.companies['종합지수'][idx + 2].가격 =
+            Math.round((stock.companies['종합지수'][idx].가격 * (1 + totalStockCount * 0.01)) / 100) * 100;
+        }
+      }
+      if (stock.companies['종합지수'][idx + 1].가격 <= 0) {
+        stock.companies['종합지수'][idx].가격 = stock.companies['종합지수'][idx + 1].가격;
+        users.forEach((user) => {
+          const stockStorage = user.stockStorages.find((stockStorage) => stockStorage.companyName === '종합지수');
+          if (stockStorage) {
+            stockStorage.stockAveragePrice = 0;
+            stockStorage.stockAveragePriceHistory[idx] = 0;
+            stockStorage.stockCountCurrent = 0;
+            stockStorage.stockCountHistory[idx] = 0;
+            updatedUserIds.add(user.userId);
+          }
+        });
+      }
+    }
+    promise.push(this.stockRepository.updateOne(stockId, { companies: stock.companies }));
+    if (updatedUserIds.size > 0) {
+      updatedUserIds.forEach((userId) => {
+        const user = users.find((user) => user.userId === userId);
+        if (user) {
+          promise.push(this.userRepository.updateOne({ stockId, userId }, { stockStorages: user.stockStorages }));
+        }
+      });
+    }
+    await Promise.all(promise);
+  }
+
   async buyStock(
     stockId: string,
     body: Request.PostBuyStock,
@@ -46,11 +164,10 @@ export class StockProcessor {
 
     try {
       // 필요한 데이터 조회
-      const [stock, users] = await Promise.all([
+      const [stock, user] = await Promise.all([
         this.stockRepository.findOneById(stockId, { consistentRead: true }),
-        this.userRepository.find({ stockId }, { consistentRead: true }),
+        this.userRepository.findOne({ stockId, userId }, { consistentRead: true }),
       ]);
-      const user = users.find((v) => v.userId === userId);
 
       if (!stock) {
         throw new Error('스톡 정보를 불러올 수 없습니다');
@@ -137,27 +254,7 @@ export class StockProcessor {
         moneyHistory[i] = user.money - totalPrice;
       }
 
-      // 시장 영향 적용: 매수 후 가격 상승
-      const newPrice = this.applyMarketImpact(companyPrice, 'BUY', amount);
-
-      // 현재 시간 인덱스에 대해 가격 업데이트
-      const updatedCompanyInfo = [...companyInfo];
-      updatedCompanyInfo[idx] = {
-        ...updatedCompanyInfo[idx],
-        가격: newPrice,
-      };
-
-      const updatedCompanies = {
-        ...companies,
-        [company]: updatedCompanyInfo,
-      };
-
-      const updateStock = { remainingStocks: updatedRemainingStocks } as Partial<Stock>;
-      if (isChangeStockPrice) {
-        updateStock.companies = updatedCompanies;
-      }
-
-      await Promise.all([
+      const promise = [
         this.userRepository.updateOneWithAdd(
           { stockId, userId },
           {
@@ -169,16 +266,35 @@ export class StockProcessor {
             money: -totalPrice,
           },
         ),
-        // FIXME: 아래 코드 버그 있음
-        // this.stockRepository.updateOneWithAdd(
-        //   stockId,
-        //   {},
-        //   {
-        //     [`remainingStocks.${company}`]: -amount,
-        //   },
-        // ),
-        this.stockRepository.updateOne(stockId, updateStock),
-      ]);
+      ];
+
+      if (isChangeStockPrice) {
+        // 시장 영향 적용: 매수 후 가격 상승
+        const newPrice = this.applyMarketImpact(companyPrice, 'BUY', amount);
+
+        // 현재 시간 인덱스에 대해 가격 업데이트
+        const updatedCompanyInfo = [...companyInfo];
+        updatedCompanyInfo[idx] = {
+          ...updatedCompanyInfo[idx],
+          가격: newPrice,
+        };
+
+        const updatedCompanies = {
+          ...companies,
+          [company]: updatedCompanyInfo,
+        };
+
+        const updateStock = { remainingStocks: updatedRemainingStocks } as Partial<Stock>;
+        updateStock.companies = updatedCompanies;
+
+        promise.push(this.stockRepository.updateOne(stockId, updateStock));
+      }
+
+      await Promise.all(promise);
+
+      if (stock.gameMode === 'dalto') {
+        await this.updateDaltoStockPrice(stockId, company, idx);
+      }
 
       return {
         message: `주식을 ${amount}주 구매하였습니다.`,
@@ -204,8 +320,8 @@ export class StockProcessor {
     try {
       // 필요한 데이터 조회
       const [stock, user] = await Promise.all([
-        this.stockRepository.findOneById(stockId),
-        this.userRepository.findOne({ stockId, userId }),
+        this.stockRepository.findOneById(stockId, { consistentRead: true }),
+        this.userRepository.findOne({ stockId, userId }, { consistentRead: true }),
       ]);
 
       if (!stock) {
@@ -299,27 +415,7 @@ export class StockProcessor {
         moneyHistory[i] = user.money + totalPrice;
       }
 
-      // 시장 영향 적용: 매도 후 가격 하락
-      const newPrice = this.applyMarketImpact(companyPrice, 'SELL', amount);
-
-      // 현재 시간 인덱스에 대해 가격 업데이트
-      const updatedCompanyInfo = [...companyInfo];
-      updatedCompanyInfo[idx] = {
-        ...updatedCompanyInfo[idx],
-        가격: newPrice,
-      };
-
-      const updatedCompanies = {
-        ...companies,
-        [company]: updatedCompanyInfo,
-      };
-
-      const updateStock = { remainingStocks: updatedRemainingStocks } as Partial<Stock>;
-      if (isChangeStockPrice) {
-        updateStock.companies = updatedCompanies;
-      }
-
-      await Promise.all([
+      const promise = [
         this.userRepository.updateOneWithAdd(
           { stockId, userId },
           {
@@ -331,16 +427,35 @@ export class StockProcessor {
             money: totalPrice,
           },
         ),
-        // FIXME: 아래 코드 버그 있음
-        // this.stockRepository.updateOneWithAdd(
-        //   stockId,
-        //   {},
-        //   {
-        //     [`remainingStocks.${company}`]: amount,
-        //   },
-        // ),
-        this.stockRepository.updateOne(stockId, updateStock),
-      ]);
+      ];
+
+      if (isChangeStockPrice) {
+        // 시장 영향 적용: 매도 후 가격 하락
+        const newPrice = this.applyMarketImpact(companyPrice, 'SELL', amount);
+
+        // 현재 시간 인덱스에 대해 가격 업데이트
+        const updatedCompanyInfo = [...companyInfo];
+        updatedCompanyInfo[idx] = {
+          ...updatedCompanyInfo[idx],
+          가격: newPrice,
+        };
+
+        const updatedCompanies = {
+          ...companies,
+          [company]: updatedCompanyInfo,
+        };
+
+        const updateStock = { remainingStocks: updatedRemainingStocks } as Partial<Stock>;
+        updateStock.companies = updatedCompanies;
+
+        promise.push(this.stockRepository.updateOne(stockId, updateStock));
+      }
+
+      await Promise.all(promise);
+
+      if (stock.gameMode === 'dalto') {
+        await this.updateDaltoStockPrice(stockId, company, idx);
+      }
 
       return {
         message: `주식을 ${amount}주 판매하였습니다.`,

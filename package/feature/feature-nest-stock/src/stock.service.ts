@@ -229,6 +229,113 @@ export class StockService {
     });
   }
 
+  async initStockDalto(stockId: string, body: Request.PostStockInit): Promise<StockSchemaWithId | null> {
+    const { stockNames, maxMarketStockCount, maxStockHintCount } = body;
+
+    const newCompanies: StockSchema['companies'] = {};
+    const hintCompanies: { companyName: string; round: number; price: number; infos: string[] }[] = [];
+
+    // 주식표 정의
+    const defineCompany = ({
+      companyName,
+      round,
+      price,
+    }: {
+      companyName: string;
+      round: number;
+      price: number;
+    }): void => {
+      if (!newCompanies[companyName]) {
+        newCompanies[companyName] = [];
+      }
+      newCompanies[companyName][round] = {
+        가격: price,
+        정보: [],
+      };
+
+      if (!companyName.includes('종합지수') && !companyName.includes('2배')) {
+        hintCompanies.push({ companyName, infos: [], price, round });
+      }
+    };
+
+    // 일반주식
+    stockNames.forEach((company) => {
+      for (let round = 0; round <= StockConfig.MAX_STOCK_IDX; round++) {
+        if (round !== 3 && round !== 6 && round !== 9) {
+          if (Math.floor(round / 3) > 0) {
+            defineCompany({
+              companyName: company,
+              price: newCompanies[company][Math.floor(round / 3) * 3].가격,
+              round,
+            });
+            continue;
+          }
+          defineCompany({
+            companyName: company,
+            price: StockConfig.INIT_STOCK_PRICE,
+            round,
+          });
+          continue;
+        }
+
+        const prevPrice = newCompanies[company][round - 1].가격;
+
+        const calc1 = Math.floor(Math.random() * prevPrice - prevPrice / 2);
+        const calc2 = Math.floor(Math.random() * StockConfig.INIT_STOCK_PRICE - StockConfig.INIT_STOCK_PRICE / 2);
+
+        const frunc = Math.abs(calc1) >= Math.abs(calc2) ? calc1 : prevPrice + calc2 <= 0 ? calc1 : calc2;
+        const price = ceilToUnit(prevPrice + frunc, StockConfig.INIT_STOCK_PRICE / 1000);
+
+        defineCompany({
+          companyName: company,
+          price,
+          round,
+        });
+      }
+    });
+
+    function pushHint(userId: string, companyName: string, idx: number): void {
+      hintCompanies.find((v) => v.companyName === companyName && v.round === idx)?.infos.push(userId);
+      newCompanies[companyName][idx].정보.push(userId);
+    }
+
+    function getCompanies(idx: number, userId: string): { companyName: string; price: number; round: number }[] {
+      return hintCompanies
+        .filter((v) => v.round === idx && !v.infos.some((v) => v === userId))
+        .sort(() => Math.random() - 0.5)
+        .sort((a, b) => a.infos.length - b.infos.length);
+    }
+
+    const players = await this.userService.getUserList(stockId);
+    const getPlayerIds = (): string[] => players.map((v) => v.userId).sort(() => Math.random() - 0.5);
+
+    for (const idx of [3, 3, 6, 6, 9, 9]) {
+      for (const userId of getPlayerIds()) {
+        const company = getCompanies(idx, userId)[0];
+        if (company === undefined) {
+          continue;
+        }
+        pushHint(userId, company.companyName, idx);
+      }
+    }
+
+    // 주식 재고 주입하기
+    const remainingStocks = {};
+    Object.keys(newCompanies).forEach((company) => {
+      remainingStocks[company] = maxMarketStockCount;
+    });
+
+    return this.stockRepository.findOneAndUpdate(stockId, {
+      companies: newCompanies,
+      isTransaction: false,
+      isVisibleRank: false,
+      maxStockHintCount,
+      remainingStocks,
+      startedTime: dayjs().toISOString(),
+      stockPhase: 'PLAYING',
+    });
+  }
+
   async drawStockInfo(stockId: string, body: Request.PostDrawStockInfo): Promise<StockSchemaWithId | null> {
     try {
       const { userId } = body;

@@ -8,11 +8,38 @@ import { Query } from '../../../../../../hook';
 import { UserStore } from '../../../../../../store';
 import {
   fluctuationMenuItems,
+  gameModeMenuItems,
   initialMoneyMenuItems,
   maxMarketStockCountMenuItems,
   maxPersonalStockCountMenuItems,
 } from './constant';
 import { 게임모드, 쀼머니게임_회사 } from '../../constant';
+
+const STOCK_NAMES = [
+  '고양기획',
+  '꿀벌생명',
+  '늑대통신',
+  '멍멍제과',
+  '수달물산',
+  '여우은행',
+  '용용카드',
+  '토끼건설',
+  '햄찌금융',
+  '호랑전자',
+] as [string, string, string, string, string, string, string, string, string, string];
+
+const DALTO_NAMES = [
+  '자동차',
+  '에너지',
+  '건설',
+  '방산',
+  '인공지능',
+  '종합지수',
+  '자동차 2배',
+  '건설 2배',
+  '방산 2배',
+  '인공지능 2배',
+] as [string, string, string, string, string, string, string, string, string, string];
 
 interface Props {
   HeaderComponent?: JSX.Element;
@@ -29,7 +56,6 @@ const Waiting = ({ HeaderComponent = <></>, stockId }: Props) => {
   const [gameOption, setGameOption] = useState({
     hasLoan: true,
     isTransaction: true,
-    is쀼머니게임: false,
     maxStockHintCount: Infinity,
     stockNames: [
       '고양기획',
@@ -174,34 +200,40 @@ const Waiting = ({ HeaderComponent = <></>, stockId }: Props) => {
   };
 
   const startGame = async () => {
-    if (!stockId) return;
+    if (!stockId || !stock) return;
 
     await mutateAlignIndex({});
     await mutateResetGame({});
-    console.log('🚀 ~ startGame ~ gameOption.is쀼머니게임:', gameOption.is쀼머니게임);
-    if (gameOption.is쀼머니게임) {
+    if (stock.gameMode === 게임모드.REALISM) {
       await mutateInitStock({
         companies: 쀼머니게임_회사,
+        gameMode: stock.gameMode,
         isCustomCompanies: true,
         maxMarketStockCount: Infinity,
         maxStockHintCount: gameOption.maxStockHintCount,
       });
-    } else {
+    } else if (stock.gameMode === 게임모드.STOCK) {
       const maxMarketStockCount = getMaxMarketStockCount();
-      console.log('🚀 ~ startGame ~ maxMarketStockCount:', maxMarketStockCount);
       await mutateInitStock({
+        gameMode: stock.gameMode,
         isCustomCompanies: false,
         maxMarketStockCount,
         maxStockHintCount: gameOption.maxStockHintCount,
         stockNames: gameOption.stockNames,
       });
+    } else if (stock.gameMode === 게임모드.DALTO) {
+      await mutateInitStock({
+        gameMode: stock.gameMode,
+        isCustomCompanies: false,
+        maxMarketStockCount: Infinity,
+        maxStockHintCount: 6,
+        stockNames: gameOption.stockNames,
+      });
     }
-    const maxPersonalStockCount = gameOption.is쀼머니게임 ? Infinity : getMaxPersonalStockCount();
-    console.log('🚀 ~ startGame ~ maxPersonalStockCount:', maxPersonalStockCount);
+    const maxPersonalStockCount = stock.gameMode === 게임모드.STOCK ? getMaxPersonalStockCount() : Infinity;
     await mutateUpdateGame({
       _id: stockId,
-      fluctuationsInterval: stock?.fluctuationsInterval,
-      gameMode: gameOption.is쀼머니게임 ? 게임모드.REALISM : 게임모드.STOCK,
+      fluctuationsInterval: stock.fluctuationsInterval,
       hasLoan: gameOption.hasLoan,
       isTransaction: gameOption.isTransaction,
       maxPersonalStockCount,
@@ -327,39 +359,58 @@ const Waiting = ({ HeaderComponent = <></>, stockId }: Props) => {
                       </GameOptionText>
                     </GameOptionValue>
                   </GameOption>
-                  <GameOption>
-                    <GameOptionTitle>쀼머니 게임 모드</GameOptionTitle>
-                    <GameOptionValue style={{ justifyContent: 'flex-end', paddingRight: '10px' }}>
-                      <Switch
-                        checked={gameOption.is쀼머니게임}
-                        onChange={() => {
-                          if (gameOption.is쀼머니게임) {
-                            changeGameOption('is쀼머니게임');
-                            mutateUpdateGame({
-                              _id: stockId,
-                              gameMode: 게임모드.STOCK,
-                            });
-                            return;
-                          }
-
-                          setGameOption((prev) => ({
-                            ...prev,
-                            hasLoan: false,
-                            is쀼머니게임: true,
-                            maxStockHintCount: 0,
-                          }));
+                  <GameOption id="game-option-game-mode-container">
+                    <GameOptionTitle>게임 모드</GameOptionTitle>
+                    <Dropdown
+                      menu={{
+                        inlineIndent: 10,
+                        items: gameModeMenuItems,
+                        onClick: ({ key }) => {
                           mutateUpdateGame({
                             _id: stockId,
-                            gameMode: 게임모드.REALISM,
-                            initialMoney: 100_000_000,
+                            gameMode: key as 게임모드,
+                            initialMoney: key === 게임모드.REALISM ? 100_000_000 : 1_000_000,
                           });
-                        }}
-                        style={{ backgroundColor: gameOption.is쀼머니게임 ? '#6339E3' : '#030711' }}
-                      />
-                      <GameOptionText style={{ minWidth: '24px' }}>
-                        {gameOption.is쀼머니게임 ? 'ON' : 'OFF'}
-                      </GameOptionText>
-                    </GameOptionValue>
+                          if (key === 게임모드.REALISM) {
+                            setGameOption((prev) => ({
+                              ...prev,
+                              hasLoan: false,
+                              maxStockHintCount: 0,
+                            }));
+                          } else if (key === 게임모드.STOCK) {
+                            setGameOption((prev) => ({
+                              ...prev,
+                              hasLoan: true,
+                              maxStockHintCount: Infinity,
+                              stockNames: STOCK_NAMES,
+                            }));
+                          } else if (key === 게임모드.DALTO) {
+                            setGameOption((prev) => ({
+                              ...prev,
+                              hasLoan: false,
+                              maxStockHintCount: 6,
+                              stockNames: DALTO_NAMES,
+                            }));
+                          }
+                        },
+                        style: gameOptionDropdownStyle,
+                      }}
+                      trigger={['click']}
+                      getPopupContainer={() => document.getElementById('game-option-game-mode-container')!}
+                    >
+                      <GameOptionValue dark>
+                        <GameOptionText>
+                          {(() => {
+                            const found = gameModeMenuItems?.find((item) => item?.key === stock?.gameMode);
+                            if (found && 'label' in found) {
+                              return found.label;
+                            }
+                            return null;
+                          })()}
+                        </GameOptionText>
+                        <ChevronDown />
+                      </GameOptionValue>
+                    </Dropdown>
                   </GameOption>
                   <GameOption id="game-option-initial-money-container">
                     <GameOptionTitle>초기 자금</GameOptionTitle>
@@ -393,7 +444,7 @@ const Waiting = ({ HeaderComponent = <></>, stockId }: Props) => {
                       </GameOptionValue>
                     </Dropdown>
                   </GameOption>
-                  {!gameOption.is쀼머니게임 && (
+                  {stock?.gameMode === 게임모드.STOCK && (
                     <>
                       <GameOption id="game-option-max-stock-container">
                         <GameOptionTitle>시장 주식 수량 제한</GameOptionTitle>
@@ -459,7 +510,7 @@ const Waiting = ({ HeaderComponent = <></>, stockId }: Props) => {
                       )}
                     </>
                   )}
-                  {!gameOption.is쀼머니게임 && (
+                  {(stock?.gameMode === 게임모드.STOCK || stock?.gameMode === 게임모드.DALTO) && (
                     <GameOption style={{ display: 'block', gap: '10px' }}>
                       <GameOptionTitle>종목명</GameOptionTitle>
                       <StockNameInputGrid>
