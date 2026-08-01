@@ -8,9 +8,11 @@ import { Session } from '@supabase/supabase-js';
 import SupabaseProvider from './library/supabase/SupabaseProvider';
 import { UserStore } from './store';
 import { isBoothMode } from './utils/booth';
+import { isInAppBrowser } from './utils/inAppBrowser';
 import { BoothProvider, useBoothContext } from './context/BoothContext';
 import BoothModeEntry from './component/booth/BoothModeEntry';
 import PartyNotFound from './component/booth/PartyNotFound';
+import InAppBrowserGuide from './component/InAppBrowserGuide';
 import * as Query from './hook/query';
 import BackofficePoll from './page/@backoffice@poll';
 import Profile from './page/@profile';
@@ -211,11 +213,21 @@ const BoothModeApp: React.FC<{
   }
 
   // Show booth mode entry
-  return <BoothModeEntry onGuestJoin={handleGuestJoin} onAccountLogin={handleAccountLogin} />;
+  if (partyId) {
+    return <BoothModeEntry partyId={partyId} onGuestJoin={handleGuestJoin} onAccountLogin={handleAccountLogin} />;
+  }
 };
 
 const Global: React.FC = () => {
   const [supabaseSession, setSupabaseSession] = useAtom(UserStore.supabaseSession);
+
+  // 인앱브라우저 감지 (초기값으로 한 번만 체크)
+  const [showInAppGuide] = useState(() => isInAppBrowser());
+
+  // 인앱브라우저인 경우 안내 페이지 표시
+  if (showInAppGuide) {
+    return <InAppBrowserGuide />;
+  }
 
   // Check if booth mode is enabled AND if we're on a party page
   const isPartyPage = window.location.pathname.startsWith('/party/');

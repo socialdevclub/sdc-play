@@ -33,7 +33,11 @@ export type StockUserSchema = {
   lastActivityTime: string;
   loanCount: number;
   stockStorages: StockStorageSchema[];
-  resultByRound: number[];
+  resultByRound: (number | null)[];
+  /**
+   * V2 전용: 플레이어 등급 (라운드 시작 시 계산됨)
+   */
+  grade?: PlayerGrade;
 };
 
 const StockPhase = {
@@ -46,17 +50,52 @@ const StockPhase = {
 } as const;
 export type StockPhase = (typeof StockPhase)[keyof typeof StockPhase];
 
+// V2 카드 가시성 타입
+export type HintVisibility = {
+  companyName: boolean; // A형: true, B형: false
+  round: boolean; // A형: false, B형: true
+  direction: boolean; // A형: false, B형: true
+  fluctuation: boolean; // 항상 true
+};
+
+// V2 카드 상세 정보
+export type HintDetail = {
+  userId: string;
+  isVisible: HintVisibility;
+};
+
 export type CompanyInfo = {
   가격: number;
-  정보: string[];
+  정보: string[]; // userId 목록 (기존 호환)
+  // V2 전용 (optional)
+  hints?: HintDetail[]; // 카드 상세 정보 (가시성 포함)
+  fixedFluctuation?: number; // 고정 가격 이벤트 변동률
 };
 
 const StockGameMode = {
   DALTO: 'dalto',
   REALISM: 'realism',
   STOCK: 'stock',
+  V2: 'v2',
 } as const;
 export type StockGameMode = (typeof StockGameMode)[keyof typeof StockGameMode];
+
+// V2 등급 시스템
+export type PlayerGrade = 'whale' | 'shrimp' | 'ant';
+
+// V2 등급 설정 (initStockV2에서 정의)
+export type GradeConfig = {
+  thresholds: {
+    whale: number; // 상위 N% (예: 0.3 = 상위 30%)
+    shrimp: number; // 중간까지 N% (예: 0.7 = 상위 30~70%)
+    // ant는 나머지
+  };
+  multipliers: {
+    whale: number; // 영향력 배수 (예: 0.5)
+    shrimp: number; // 영향력 배수 (예: 1.0)
+    ant: number; // 영향력 배수 (예: 2.0)
+  };
+};
 
 export type StockSchema = {
   _id: string;
@@ -87,20 +126,28 @@ export type StockSchema = {
    *
    * 백엔드에서는 무한개를 `null`로 관리합니다.
    */
-  maxStockHintCount: number;
+  maxStockHintCount: number | null;
   /**
    * 최대 개인 보유 주식 개수
    *
    * 백엔드에서는 무한개를 `null`로 관리합니다.
    */
-  maxPersonalStockCount: number;
+  maxPersonalStockCount: number | null;
   /**
    * 게임 모드
    *
    * 게임 모드는 백엔드에서 정의한 문자열로 관리합니다.
-   * 예시: 'realism', 'stock', 'custom'
+   * 예시: 'realism', 'stock', 'custom', 'v2'
    */
   gameMode: StockGameMode;
+  /**
+   * V2 전용: 초기 지급 주식 수
+   */
+  initialStockCount?: number;
+  /**
+   * V2 전용: 등급 설정 (thresholds, multipliers)
+   */
+  gradeConfig?: GradeConfig;
 };
 export type StockSchemaWithId = StockSchema;
 

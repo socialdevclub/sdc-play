@@ -4,7 +4,7 @@ import saveAs from 'file-saver';
 import html2canvas from 'html2canvas';
 import { useAtomValue } from 'jotai';
 import { AlignLeft, Bookmark, LogOut } from 'lucide-react';
-import { useRef, useState, useEffect } from 'react';
+import { useRef, useState, useEffect, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 // import { GetStockUser } from 'shared~type-stock/Response';
 import { css } from '@emotion/react';
@@ -12,7 +12,7 @@ import { commaizeNumber } from '@toss/utils';
 import { LOCAL_STORAGE_KEY } from '../../../../../../config/localStorage';
 import { Query } from '../../../../../../hook';
 import { UserStore } from '../../../../../../store';
-import { formatPercentage } from '../../../../../../utils/stock';
+import { calculateCurrentValue, calculateProfitRatio, getLevelByRatio } from '../../../../../../utils/stock';
 import ResultRealism from './ResultRealism';
 import { useBoothContext } from '../../../../../../context/BoothContext';
 
@@ -39,13 +39,33 @@ function Result({ stockId }: ResultProps) {
   }, []);
 
   const supabaseSession = useAtomValue(UserStore.supabaseSession);
-  const { getRound0Avg, getRound12Avg } = Query.Stock.useQueryResult(stockId);
 
   const { partyId } = useParams();
 
-  const { data: stock } = Query.Stock.useQueryStock(stockId);
+  const { data: stock, companiesPrice } = Query.Stock.useQueryStock(stockId);
   const { data: users } = Query.Stock.useUserList(stockId);
   const { data: party } = Query.Party.useQueryParty(partyId);
+
+  // 특정 유저의 현재 보유 주식 시가 총액을 계산하는 함수
+  const calculateUserAllSellPrice = useMemo(() => {
+    if (!companiesPrice) return () => 0;
+
+    return (userStockStorages: Array<{ companyName: string; stockCountCurrent: number }>) => {
+      return userStockStorages.reduce((acc, { companyName, stockCountCurrent }) => {
+        return acc + (companiesPrice[companyName] ?? 0) * stockCountCurrent;
+      }, 0);
+    };
+  }, [companiesPrice]);
+
+  // 특정 유저의 현재 자산 가치를 계산하는 함수
+  const calculateUserCurrentValue = useMemo(() => {
+    if (!stock) return () => 0;
+
+    return (userMoney: number, userStockStorages: Array<{ companyName: string; stockCountCurrent: number }>) => {
+      const allSellPrice = calculateUserAllSellPrice(userStockStorages);
+      return calculateCurrentValue(userMoney, stock.initialStockCount ?? 0, allSellPrice);
+    };
+  }, [stock, calculateUserAllSellPrice]);
 
   const { mutateAsync: removeStock } = Query.Stock.useRemoveStockSession(stock?._id ?? ''); // 주식게임 방 세션 삭제
   // const { mutateAsync: removeStockUser } = Query.Stock.useRemoveUser(); // 주식게임 방 세션 유저 삭제
@@ -76,55 +96,38 @@ function Result({ stockId }: ResultProps) {
 
   const captureAreaRef = useRef<HTMLDivElement>(null);
 
-  if (!stock || !supabaseSession) {
+  if (!stock || !supabaseSession || !users) {
     return <></>;
   }
 
   const userId = supabaseSession.user.id;
-  const getRoundAvg = stock.round === 0 ? getRound0Avg : getRound12Avg;
-  const roundAvg = getRoundAvg(userId);
-  const fluctuation = roundAvg - stock.initialMoney;
-  const percentage = formatPercentage(fluctuation / stock.initialMoney);
 
-  if (!users) {
+  // 각 유저의 현재 자산 가치를 계산하여 정렬
+  const usersWithValue = users.map((u) => ({
+    ...u,
+    currentValue: calculateUserCurrentValue(u.money, u.stockStorages ?? []),
+  }));
+  const sortedUser = [...usersWithValue].sort((a, b) => b.currentValue - a.currentValue);
+
+  const user = sortedUser.find((v) => v.userId === userId);
+  if (!user) {
     return <></>;
   }
 
-  const sortedUser = users ? [...users].sort((a, b) => getRoundAvg(b.userId) - getRoundAvg(a.userId)) : [];
   const rank = sortedUser.findIndex((v) => v.userId === userId) + 1;
-  const user = sortedUser.find((v) => v.userId === userId);
   const rankPercentage = Math.floor(Math.max(((rank - 1) / sortedUser.length) * 100, 1));
 
-  const animal =
-    percentage < 0
-      ? 'hamster'
-      : percentage < 100
-      ? 'rabbit'
-      : percentage < 150
-      ? 'cat'
-      : percentage < 200
-      ? 'dog'
-      : percentage < 250
-      ? 'wolf'
-      : percentage < 300
-      ? 'tiger'
-      : 'dragon';
+  // 현재 유저의 수익률 계산 (Home 공식 적용)
+  const { currentValue } = user;
+  const fluctuation = currentValue - stock.initialMoney;
+  const percentage = calculateProfitRatio(currentValue, stock.initialMoney);
 
-  const animalResult =
-    animal === 'hamster'
-      ? '당돌한 햄스터'
-      : animal === 'rabbit'
-      ? '순수한 토끼'
-      : animal === 'cat'
-      ? '세련된 고양이'
-      : animal === 'dog'
-      ? '활발한 강아지'
-      : animal === 'wolf'
-      ? '카리스마 늑대'
-      : animal === 'tiger'
-      ? '타고난 호랑이'
-      : '전설적인 드래곤';
+  // 레벨 정보 가져오기 (공통 함수 사용)
+  const levelInfo = getLevelByRatio(percentage);
+  const { animal } = levelInfo;
+  const animalResult = levelInfo.label;
 
+  // 동물별 설명은 UI 표시용으로 유지
   const animalDescription =
     animal === 'hamster'
       ? '겉보기와 달리 대담하고 당돌한 매력을 가진 햄스터예요. 때로는 장난스럽게 속이고 때로는 예측불가한 행동으로 게임의 재미를 한층 더해주는 빌런이에요.'
@@ -362,35 +365,39 @@ function Result({ stockId }: ResultProps) {
     <Container>
       {stock.gameMode !== 'realism' && (
         <>
-          <CaptureArea ref={captureAreaRef}>
-            <Title>주식게임 결과</Title>
-            <Wrapper>
-              <Box>
-                <BoxContainer>
-                  <TitleContainer>
-                    <Name>{animalResult}</Name>
-                  </TitleContainer>
-                  <AnimalImg src={`/animal/${animal}.jpg`} />
-                  <Text>{animalDescription}</Text>
-                  <Text>
-                    순수익 : {commaizeNumber(fluctuation)}원 ({percentage.toFixed(2)}%)
-                  </Text>
-                  <Text>
-                    랭킹 : {rank}위 (상위 {rankPercentage}%)
-                  </Text>
-                </BoxContainer>
-              </Box>
-            </Wrapper>
-          </CaptureArea>
-          <Button
-            css={css`
-              margin-bottom: 35px;
-            `}
-            color="#9333EA"
-            onClick={() => handleDownload()}
-          >
-            <Label>이미지 저장</Label>
-          </Button>
+          {stock.gameMode === 'stock' && (
+            <>
+              <CaptureArea ref={captureAreaRef}>
+                <Title>주식게임 결과</Title>
+                <Wrapper>
+                  <Box>
+                    <BoxContainer>
+                      <TitleContainer>
+                        <Name>{animalResult}</Name>
+                      </TitleContainer>
+                      <AnimalImg src={`/animal/${animal}.jpg`} />
+                      <Text>{animalDescription}</Text>
+                      <Text>
+                        순수익 : {commaizeNumber(fluctuation)}원 ({percentage.toFixed(2)}%)
+                      </Text>
+                      <Text>
+                        랭킹 : {rank}위 (상위 {rankPercentage}%)
+                      </Text>
+                    </BoxContainer>
+                  </Box>
+                </Wrapper>
+              </CaptureArea>
+              <Button
+                css={css`
+                  margin-bottom: 35px;
+                `}
+                color="#9333EA"
+                onClick={() => handleDownload()}
+              >
+                <Label>이미지 저장</Label>
+              </Button>
+            </>
+          )}
 
           <SubTitle>
             <Bookmark size={24} />
@@ -404,14 +411,14 @@ function Result({ stockId }: ResultProps) {
             </Avatar>
             <Column align="flex-start">
               <Nickname>{getRankNickname(rank, user?.userInfo.nickname)}</Nickname>
-              <AnimalName>{animalResult}</AnimalName>
+              {stock.gameMode === 'stock' && <AnimalName>{animalResult}</AnimalName>}
             </Column>
             <Column align="flex-end">
               <Percentage percent={percentage}>
                 {percentage >= 0 ? '+' : ''}
-                {percentage}%
+                {percentage.toFixed(2)}%
               </Percentage>
-              <Avg>{roundAvg.toLocaleString()}원</Avg>
+              <Avg>{currentValue.toLocaleString()}원</Avg>
             </Column>
           </RankCard>
 
@@ -419,28 +426,26 @@ function Result({ stockId }: ResultProps) {
             <AlignLeft size={24} />
             <span>전체 순위</span>
           </SubTitle>
-          {sortedUser.map((user, index) => {
-            const userAvg = getRoundAvg(user.userId);
-            const userFluctuation = userAvg - stock.initialMoney;
-            const userPercentage = formatPercentage(userFluctuation / stock.initialMoney);
-            const animalResult = getAnimalByPercentage(userPercentage);
+          {sortedUser.map((u, index) => {
+            const userPercentage = calculateProfitRatio(u.currentValue, stock.initialMoney);
+            const userLevelInfo = getLevelByRatio(userPercentage);
 
             return (
-              <RankCard key={user.userId} color={getRankColor(index + 1)}>
+              <RankCard key={u.userId} color={getRankColor(index + 1)}>
                 <Rank>{index + 1}</Rank>
                 <Avatar size={50} style={{ flexShrink: 0 }}>
-                  {user.userInfo.nickname[0]}
+                  {u.userInfo.nickname[0]}
                 </Avatar>
                 <Column align="flex-start">
-                  <Nickname>{getRankNickname(index + 1, user.userInfo.nickname)}</Nickname>
-                  <AnimalName>{animalResult}</AnimalName>
+                  <Nickname>{getRankNickname(index + 1, u.userInfo.nickname)}</Nickname>
+                  {stock.gameMode === 'stock' && <AnimalName>{userLevelInfo.label}</AnimalName>}
                 </Column>
                 <Column align="flex-end">
                   <Percentage percent={userPercentage}>
                     {userPercentage >= 0 ? '+' : ''}
-                    {userPercentage}%
+                    {userPercentage.toFixed(2)}%
                   </Percentage>
-                  <Avg>{userAvg.toLocaleString()}원</Avg>
+                  <Avg>{u.currentValue.toLocaleString()}원</Avg>
                 </Column>
               </RankCard>
             );
@@ -501,16 +506,6 @@ function getRankNickname(rank: number, nickname: string | undefined) {
     default:
       return nickname;
   }
-}
-
-function getAnimalByPercentage(percentage: number) {
-  if (percentage < 0) return '당돌한 햄스터';
-  if (percentage < 100) return '순수한 토끼';
-  if (percentage < 150) return '세련된 고양이';
-  if (percentage < 200) return '활발한 강아지';
-  if (percentage < 250) return '카리스마 늑대';
-  if (percentage < 300) return '타고난 호랑이';
-  return '전설적인 드래곤';
 }
 
 const Container = styled.div`

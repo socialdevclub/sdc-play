@@ -24,11 +24,14 @@ export class UserService {
     return this.userRepository.find({ stockId });
   }
 
-  async getRecommendedPartners(stockId: string, userId: string): Promise<string[]> {
+  async getRecommendedPartners(stockId: string, userId: string): Promise<(string | undefined)[]> {
     const stock = await this.stockRepository.findOneById(stockId);
     const users = await this.getUserList(stockId);
 
-    const { companies } = stock;
+    const companies = stock?.companies;
+    if (!companies) {
+      return [];
+    }
 
     const [partnerIds] = Object.entries(companies).reduce(
       (reducer, [company, companyInfos]) => {
@@ -177,6 +180,11 @@ ${JSON.stringify(userData)}`;
       });
 
       const { content } = response.choices[0].message;
+
+      if (!content) {
+        throw new Error('OpenAI API 응답이 없습니다.');
+      }
+
       const sortedNicknames = JSON.parse(content).nicknames;
 
       if (sortedNicknames.length !== allUsers.length) {
@@ -220,6 +228,9 @@ ${JSON.stringify(userData)}`;
 
   async initializeUsers(stockId: string): Promise<boolean> {
     const stock = await this.stockRepository.findOneById(stockId);
+    if (!stock) {
+      throw new Error('주식방을 찾을 수 없습니다.');
+    }
     return this.userRepository.initializeUsers(stock);
   }
 
@@ -235,6 +246,10 @@ ${JSON.stringify(userData)}`;
     }
 
     const stock = await this.stockRepository.findOneById(stockId);
+    if (!stock) {
+      throw new Error('주식방을 찾을 수 없습니다.');
+    }
+
     const { companies } = stock;
 
     const idx = Math.min(

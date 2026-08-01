@@ -1,5 +1,5 @@
 import { HttpException, HttpStatus, Inject, Injectable, forwardRef } from '@nestjs/common';
-import type { Request, Response } from 'shared~type-stock';
+import type { Request, Response, PlayerGrade, GradeConfig, StockSchema, StockUserSchema } from 'shared~type-stock';
 import { getDateDistance } from '@toss/date';
 import dayjs from 'dayjs';
 import { UserRepository } from './user/user.repository';
@@ -37,122 +37,219 @@ export class StockProcessor {
     return Math.round(boundedPrice / 100) * 100;
   }
 
-  private async updateDaltoStockPrice(stockId: string, company: string, idx: number): Promise<void> {
-    const nextRound = idx + 1;
-    if (company.includes('2배')) {
-      return;
-    }
-    if (nextRound === 3 || nextRound === 6 || nextRound === 9) {
-      return;
-    }
+  /**
+   * V2 등급 계산 - 가난할수록 whale, 부유할수록 ant
+   * 모든 자산이 동일하면 shrimp 반환
+   * 동점자는 Percentile Rank 방식으로 평균 순위 적용
+   *
+   * @example [100, 200×8, 300]원:
+   * - 100원 → whale (percentile 0.1)
+   * - 200원 → shrimp (percentile 0.55)
+   * - 300원 → ant (percentile 1.0)
+   *
+   * @example [200×10]원: 모두 → shrimp (동일 자산)
+   */
+  private calculateGrade(userAsset: number, allUserAssets: number[], gradeConfig?: GradeConfig): PlayerGrade {
+    if (!gradeConfig) return 'shrimp';
 
-    const promise = [];
-    const updatedUserIds = new Set<string>();
+    const n = allUserAssets.length;
+    if (n <= 1) return 'shrimp';
 
+    // 모든 자산이 동일하면 shrimp
+    const minAsset = Math.min(...allUserAssets);
+    const maxAsset = Math.max(...allUserAssets);
+    if (minAsset === maxAsset) return 'shrimp';
+
+    // Percentile Rank 계산 (동점 처리 포함)
+    // 부유한 순으로 등급 부여: 부유할수록 whale(고래), 가난할수록 ant(개미)
+    const belowCount = allUserAssets.filter((a) => a < userAsset).length;
+    const sameCount = allUserAssets.filter((a) => a === userAsset).length;
+    // 평균 순위 = belowCount + (sameCount + 1) / 2
+    const avgRank = belowCount + (sameCount + 1) / 2;
+    // percentile이 높을수록 부유함 (나보다 가난한 사람이 많음)
+    const percentile = avgRank / n;
+
+    const { thresholds } = gradeConfig;
+    // 상위 30% (부유) → whale, 하위 30% (가난) → ant
+    if (percentile >= 1 - thresholds.whale) return 'whale';
+    if (percentile >= 1 - thresholds.shrimp) return 'shrimp';
+    return 'ant';
+  }
+
+  /**
+   * V2 유저 총 자산 계산 (현금 + 보유주식 평가액)
+   */
+  private calculateUserTotalAsset(user: StockUserSchema, stock: StockSchema, idx: number): number {
+    const stockValue = user.stockStorages.reduce((acc, storage) => {
+      const companyInfo = stock.companies[storage.companyName];
+      if (!companyInfo) return acc;
+      const currentPrice = companyInfo[idx]?.가격 ?? 0;
+      return acc + storage.stockCountCurrent * currentPrice;
+    }, 0);
+    return user.money + stockValue;
+  }
+
+  /**
+   * V2 가격 업데이트 - 매 거래 후 다음 라운드 가격 재계산
+   * 모든 유저의 (stockCountHistory[idx] × 등급배수) 합산하여 가격 변동
+   *
+   * @param stockId 주식 게임 ID
+   * @param company 종목명
+   * @param idx 현재 라운드 인덱스
+   */
+  private async updateV2StockPrice(stockId: string, company: string, idx: number): Promise<void> {
     const [stock, users] = await Promise.all([
       this.stockRepository.findOneById(stockId, { consistentRead: true }),
       this.userRepository.find({ stockId }, { consistentRead: true }),
     ]);
-    if (company !== '종합지수') {
-      const totalStockCount = users.reduce((acc, user) => {
-        const stockStorage = user.stockStorages.find((stockStorage) => stockStorage.companyName === company);
-        return acc + stockStorage.stockCountHistory[idx];
-      }, 0);
-      // 다음 라운드 가격 업데이트 규칙
-      // 현재 라운드 가격에서 totalStockCount 1% 만큼 증감
-      if (idx % 3 !== 2) {
-        stock.companies[company][idx + 1].가격 =
-          Math.round((stock.companies[company][idx].가격 * (1 + totalStockCount * 0.01)) / 100) * 100;
-        if (idx % 3 === 0) {
-          stock.companies[company][idx + 2].가격 =
-            Math.round((stock.companies[company][idx].가격 * (1 + totalStockCount * 0.01)) / 100) * 100;
-        }
-      }
 
-      if (stock.companies[`${company} 2배`]) {
-        if (idx % 3 !== 2) {
-          stock.companies[`${company} 2배`][idx + 1].가격 =
-            Math.round((stock.companies[`${company} 2배`][idx].가격 * (1 + totalStockCount * 0.02)) / 100) * 100;
-          if (idx % 3 === 0) {
-            stock.companies[`${company} 2배`][idx + 2].가격 =
-              Math.round((stock.companies[`${company} 2배`][idx].가격 * (1 + totalStockCount * 0.02)) / 100) * 100;
-          }
-        }
+    if (!stock || !stock.gradeConfig) return;
 
-        if (stock.companies[`${company} 2배`][idx + 1].가격 <= 0) {
-          stock.companies[company][idx].가격 = stock.companies[company][idx + 1].가격;
-          stock.companies[`${company} 2배`][idx + 1].가격 = stock.companies[`${company} 2배`][idx].가격;
-          users.forEach((user) => {
-            const stockStorage = user.stockStorages.find(
-              (stockStorage) => stockStorage.companyName === `${company} 2배`,
-            );
-            if (stockStorage) {
-              stockStorage.stockAveragePrice = 0;
-              stockStorage.stockAveragePriceHistory[idx] = 0;
-              stockStorage.stockCountCurrent = 0;
-              stockStorage.stockCountHistory[idx] = 0;
-              updatedUserIds.add(user.userId);
-            }
-          });
-        }
-        if (stock.companies[company][idx + 1].가격 <= 0) {
-          stock.companies[company][idx].가격 = stock.companies[company][idx + 1].가격;
-          users.forEach((user) => {
-            const stockStorage = user.stockStorages.find((stockStorage) => stockStorage.companyName === company);
-            if (stockStorage) {
-              stockStorage.stockAveragePrice = 0;
-              stockStorage.stockAveragePriceHistory[idx] = 0;
-              stockStorage.stockCountCurrent = 0;
-              stockStorage.stockCountHistory[idx] = 0;
-              updatedUserIds.add(user.userId);
-            }
-          });
-        }
+    const { companies, gradeConfig } = stock;
+    const companyInfo = companies[company];
+    if (!companyInfo) return;
+
+    // 다음 라운드 인덱스 유효성 체크
+    const nextIdx = idx + 1;
+    if (nextIdx > 9) return;
+
+    const currentPrice = companyInfo[idx].가격;
+    const playerCount = users.length;
+
+    /**
+     * 고정비율에 가장 가까운 100원 단위 가격 계산
+     * @param prevPrice 이전 라운드 가격
+     * @param targetPercent 목표 변동률 (양수: 상승, 음수: 하락)
+     * @returns 100원 단위로 반올림된 새 가격 (최소 100원)
+     */
+    const roundToClosestPercentage = (prevPrice: number, targetPercent: number): number => {
+      const exactPrice = prevPrice * (1 + targetPercent / 100);
+      const floorPrice = Math.floor(exactPrice / 100) * 100;
+      const ceilPrice = Math.ceil(exactPrice / 100) * 100;
+
+      // 목표 변동률과의 차이가 작은 쪽 선택
+      const absTarget = Math.abs(targetPercent);
+      const floorPercent = Math.abs((floorPrice - prevPrice) / prevPrice) * 100;
+      const ceilPercent = Math.abs((ceilPrice - prevPrice) / prevPrice) * 100;
+      const floorDiff = Math.abs(floorPercent - absTarget);
+      const ceilDiff = Math.abs(ceilPercent - absTarget);
+
+      return Math.max(floorDiff <= ceilDiff ? floorPrice : ceilPrice, 100);
+    };
+
+    // ===== 모든 유저의 등급 계산 및 저장 =====
+    const allUserAssets = users.map((user) => this.calculateUserTotalAsset(user, stock, idx));
+    const userGradeUpdates: Promise<unknown>[] = [];
+
+    for (let i = 0; i < users.length; i++) {
+      const user = users[i];
+      const userAsset = allUserAssets[i];
+      const grade = this.calculateGrade(userAsset, allUserAssets, gradeConfig);
+
+      // 등급이 변경된 경우에만 업데이트
+      if (user.grade !== grade) {
+        userGradeUpdates.push(this.userRepository.updateOne({ stockId, userId: user.userId }, { grade }));
       }
     }
 
-    if (stock.companies['종합지수']) {
-      const totalStockCount = users.reduce((acc, user) => {
-        const stockCount = user.stockStorages.reduce((acc, stockStorage) => {
-          if (stockStorage.companyName === '종합지수' || stockStorage.companyName.includes('2배')) {
-            return acc;
-          }
-          return acc + stockStorage.stockCountCurrent;
-        }, 0);
-        return acc + stockCount;
-      }, 0);
-      if (idx % 3 !== 2) {
-        stock.companies['종합지수'][idx + 1].가격 =
-          Math.round((stock.companies['종합지수'][idx].가격 * (1 + totalStockCount * 0.01)) / 100) * 100;
-        if (idx % 3 === 0) {
-          stock.companies['종합지수'][idx + 2].가격 =
-            Math.round((stock.companies['종합지수'][idx].가격 * (1 + totalStockCount * 0.01)) / 100) * 100;
-        }
-      }
-      if (stock.companies['종합지수'][idx + 1].가격 <= 0) {
-        stock.companies['종합지수'][idx].가격 = stock.companies['종합지수'][idx + 1].가격;
-        users.forEach((user) => {
-          const stockStorage = user.stockStorages.find((stockStorage) => stockStorage.companyName === '종합지수');
-          if (stockStorage) {
-            stockStorage.stockAveragePrice = 0;
-            stockStorage.stockAveragePriceHistory[idx] = 0;
-            stockStorage.stockCountCurrent = 0;
-            stockStorage.stockCountHistory[idx] = 0;
-            updatedUserIds.add(user.userId);
-          }
-        });
-      }
-    }
-    promise.push(this.stockRepository.updateOne(stockId, { companies: stock.companies }));
-    if (updatedUserIds.size > 0) {
-      updatedUserIds.forEach((userId) => {
-        const user = users.find((user) => user.userId === userId);
-        if (user) {
-          promise.push(this.userRepository.updateOne({ stockId, userId }, { stockStorages: user.stockStorages }));
-        }
+    // 등급 업데이트 비동기 실행 (가격 계산과 병렬 처리)
+    if (userGradeUpdates.length > 0) {
+      await Promise.all(userGradeUpdates).catch((err) => {
+        console.error('[V2] 등급 업데이트 실패:', err);
       });
     }
-    await Promise.all(promise);
+
+    // 다음 라운드에 고정비율 이벤트가 있는지 확인
+    const nextFixedFluctuation = companyInfo[nextIdx]?.fixedFluctuation;
+    let nextRoundPrice: number;
+
+    if (nextFixedFluctuation !== undefined) {
+      // ===== 고정비율 이벤트 처리 =====
+      // 현재 라운드의 '실제 가격'을 기준으로 고정비율 적용
+      // (초기화 시점 가격이 아닌 게임 중 변동된 가격 기준)
+      nextRoundPrice = roundToClosestPercentage(currentPrice, nextFixedFluctuation);
+    } else {
+      // ===== 일반 거래 가격 변동 계산 =====
+      // 각 플레이어의 (순매수량 × 등급배수) 합산
+      let weightedNetBuy = 0;
+      for (let i = 0; i < users.length; i++) {
+        const user = users[i];
+        const stockStorage = user.stockStorages.find((s) => s.companyName === company);
+        if (!stockStorage) continue;
+
+        // stockCountHistory[idx]는 해당 라운드의 순거래량 (매수 +, 매도 -)
+        const netBuy = stockStorage.stockCountHistory[idx] ?? 0;
+
+        // 해당 유저의 등급 계산 (이미 위에서 계산됨)
+        const userAsset = allUserAssets[i];
+        const grade = this.calculateGrade(userAsset, allUserAssets, gradeConfig);
+        const multiplier = gradeConfig.multipliers[grade];
+
+        weightedNetBuy += netBuy * multiplier;
+      }
+
+      // 가격 변동 계산
+      // ChangeRate = (WeightedNetBuy × CurrentPrice) / (PlayerCount × 1,000,000) × 100
+      const benchmark = playerCount * 1_000_000;
+      const changeRate = ((weightedNetBuy * currentPrice) / benchmark) * 100;
+
+      // 새 가격 계산
+      nextRoundPrice = currentPrice * (1 + changeRate / 100);
+
+      // 최저가 1,000원
+      nextRoundPrice = Math.max(nextRoundPrice, 1000);
+
+      // 100원 단위 반올림
+      nextRoundPrice = Math.round(nextRoundPrice / 100) * 100;
+
+      // 가격 상한 체크 (+50% 제한)
+      const maxPrice = currentPrice * 1.5;
+      nextRoundPrice = Math.min(nextRoundPrice, Math.round(maxPrice / 100) * 100);
+
+      // 가격 하한 체크 (-50% 제한)
+      const minPrice = currentPrice * 0.5;
+      nextRoundPrice = Math.max(nextRoundPrice, Math.round(minPrice / 100) * 100);
+    }
+
+    // ===== 미래 라운드 가격 연쇄 재계산 =====
+    // 현재 거래로 인해 다음 라운드 가격이 바뀌면,
+    // 그 이후의 고정비율 이벤트들도 새로운 기준 가격으로 재계산해야 함
+    const updatedCompanyInfo = [...companyInfo];
+
+    // 다음 라운드 가격 업데이트
+    updatedCompanyInfo[nextIdx] = {
+      ...updatedCompanyInfo[nextIdx],
+      가격: nextRoundPrice,
+    };
+
+    // 미래 라운드들의 고정비율 이벤트 가격 재계산
+    let basePrice = nextRoundPrice;
+    for (let futureIdx = nextIdx + 1; futureIdx <= 9; futureIdx++) {
+      const futureFixedFluctuation = companyInfo[futureIdx]?.fixedFluctuation;
+
+      if (futureFixedFluctuation !== undefined) {
+        // 고정비율 이벤트: 직전 라운드 가격 기준으로 비율 적용
+        const newFuturePrice = roundToClosestPercentage(basePrice, futureFixedFluctuation);
+        updatedCompanyInfo[futureIdx] = {
+          ...updatedCompanyInfo[futureIdx],
+          가격: newFuturePrice,
+        };
+        basePrice = newFuturePrice;
+      } else {
+        // 이벤트 없는 라운드: 직전 라운드 가격 그대로 유지
+        updatedCompanyInfo[futureIdx] = {
+          ...updatedCompanyInfo[futureIdx],
+          가격: basePrice,
+        };
+      }
+    }
+
+    const updatedCompanies = {
+      ...companies,
+      [company]: updatedCompanyInfo,
+    };
+
+    await this.stockRepository.updateOne(stockId, { companies: updatedCompanies });
   }
 
   async buyStock(
@@ -292,8 +389,12 @@ export class StockProcessor {
 
       await Promise.all(promise);
 
-      if (stock.gameMode === 'dalto') {
-        await this.updateDaltoStockPrice(stockId, company, idx);
+      switch (stock.gameMode) {
+        case 'v2':
+          await this.updateV2StockPrice(stockId, company, idx);
+          break;
+        default:
+          break;
       }
 
       return {
@@ -453,8 +554,12 @@ export class StockProcessor {
 
       await Promise.all(promise);
 
-      if (stock.gameMode === 'dalto') {
-        await this.updateDaltoStockPrice(stockId, company, idx);
+      switch (stock.gameMode) {
+        case 'v2':
+          await this.updateV2StockPrice(stockId, company, idx);
+          break;
+        default:
+          break;
       }
 
       return {

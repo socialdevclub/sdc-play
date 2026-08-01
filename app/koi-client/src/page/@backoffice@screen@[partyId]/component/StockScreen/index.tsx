@@ -6,11 +6,10 @@ import { QRCode } from 'antd';
 import { PartySchemaWithId } from 'shared~type-party';
 import dayjs from 'dayjs';
 import { Query } from '../../../../hook';
-import { useTradeDetection } from '../../../../hook/useTradeDetection';
 import prependZero from '../../../../service/prependZero';
 import PlayingWrapper from './PlayingWrapper';
 import Table from './Table';
-import TradeFeed from './TradeFeed';
+import KeyboardHelp from './KeyboardHelp';
 
 interface Props {
   party: PartySchemaWithId;
@@ -30,10 +29,12 @@ export default function StockScreen({ party }: Props) {
     refetchInterval: 300,
   });
   const { mutateAsync: mutateUpdateStock } = Query.Stock.useUpdateStock();
-  const { trades } = useTradeDetection(stock?._id || '');
+  const { mutateAsync: mutateFinishStock } = Query.Stock.useFinishStock(stock?._id);
+  const { mutateAsync: mutateSetPhase } = Query.Stock.useSetPhase();
 
   const startedTime = useMemo(() => dayjs(stock?.startedTime).toDate(), [stock?.startedTime]);
   const isTransaction = stock?.isTransaction ?? false;
+  const [showQR, setShowQR] = useState(false);
 
   useEffect(() => {
     const resetTime = (event: KeyboardEvent) => {
@@ -86,6 +87,48 @@ export default function StockScreen({ party }: Props) {
     };
   }, [isTransaction, mutateUpdateStock, startedTime, stock?._id]);
 
+  useEffect(() => {
+    const toggleQR = (event: KeyboardEvent) => {
+      if (event.key !== 'q') {
+        return;
+      }
+
+      setShowQR((prev) => !prev);
+    };
+
+    document.addEventListener('keydown', toggleQR);
+
+    return () => {
+      document.removeEventListener('keydown', toggleQR);
+    };
+  }, []);
+
+  useEffect(() => {
+    const finishStock = (event: KeyboardEvent) => {
+      if (event.key !== 'e') {
+        return;
+      }
+
+      if (!stock?._id) {
+        return;
+      }
+
+      const isConfirm = window.confirm('게임을 종료하고 RESULT 화면으로 전환하시겠습니까?');
+      if (!isConfirm) {
+        return;
+      }
+
+      mutateFinishStock({ stockId: stock._id });
+      mutateSetPhase({ phase: 'RESULT', stockId: stock._id });
+    };
+
+    document.addEventListener('keydown', finishStock);
+
+    return () => {
+      document.removeEventListener('keydown', finishStock);
+    };
+  }, [mutateFinishStock, mutateSetPhase, stock?._id]);
+
   const [time, setTime] = useState(() => {
     return getTimeDistanceWithCurrent(startedTime);
   });
@@ -104,16 +147,28 @@ export default function StockScreen({ party }: Props) {
 
   return (
     <>
+      <KeyboardHelp />
       <SwitchCase
         value={stock.stockPhase}
         caseBy={{
-          PLAYING: (
+          PLAYING: showQR ? (
+            <>
+              <TimeBox>QR코드를 스캔하여 입장하세요</TimeBox>
+              <Wrapper>
+                <Container>
+                  <QRCode value={`${window.location.origin}/party/${party._id}`} bgColor="#ffffff" size={300} />
+                  <QRInfo>
+                    <QRUrl>{`${window.location.origin}/party/${party._id}`}</QRUrl>
+                  </QRInfo>
+                </Container>
+              </Wrapper>
+            </>
+          ) : (
             <PlayingWrapper stockId={stock._id}>
               <TimeBox>{time}</TimeBox>
               <Wrapper>
                 <Container>{isTransaction && <Table stockId={stock._id} />}</Container>
               </Wrapper>
-              {isTransaction && <TradeFeed trades={trades} />}
             </PlayingWrapper>
           ),
           RESULT: (
@@ -191,19 +246,6 @@ const QRInfo = styled.div`
   flex-direction: column;
   align-items: center;
   gap: 12px;
-`;
-
-const QRTitle = styled.h2`
-  font-size: 36px;
-  color: #ffffff;
-  margin: 0;
-  font-family: 'DungGeunMo', monospace;
-`;
-
-const QRSubtitle = styled.p`
-  font-size: 20px;
-  color: #9ca3af;
-  margin: 0;
 `;
 
 const QRUrl = styled.p`

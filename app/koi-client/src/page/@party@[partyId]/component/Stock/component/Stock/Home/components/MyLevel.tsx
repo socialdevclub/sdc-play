@@ -1,7 +1,7 @@
 import styled from '@emotion/styled';
 import { Image } from 'antd';
 import * as COLOR from '../../../../../../../../config/color';
-import { LEVEL_INFO, type LevelInfoType } from '../../../../../../../../config/level';
+import { getLevelByRatio } from '../../../../../../../../utils/stock';
 
 type Props = {
   moneyRatio: string | number;
@@ -17,21 +17,6 @@ const parseRatio = (ratio: string | number): number => {
 
   // '%' 기호 제거 후 숫자로 변환
   return parseFloat(ratio.replace('%', ''));
-};
-
-/**
- * moneyRatio에 따른 레벨을 반환하는 함수
- */
-const getLevelByRatio = (ratio: string | number): LevelInfoType & { index: number } => {
-  // ratio를 숫자로 변환
-  const percentage = parseRatio(ratio);
-
-  // 해당하는 레벨 찾기
-  const levelIndex = LEVEL_INFO.findIndex((level) => percentage >= level.min && percentage < level.max);
-  const level = LEVEL_INFO[levelIndex];
-
-  // 레벨이 없으면 기본값 반환
-  return level ? { ...level, index: levelIndex } : { ...LEVEL_INFO[0], index: 0 };
 };
 
 /**

@@ -22,14 +22,20 @@ const useQueryStock = (stockId: string | undefined, options?: Options) => {
       enabled: !!stockId,
       refetchInterval: 500,
       select: (data) => {
-        data.maxPersonalStockCount = data.maxPersonalStockCount ?? Infinity;
-        data.maxStockHintCount = data.maxStockHintCount ?? Infinity;
-        Object.entries(data.remainingStocks).forEach(([company, remainingStock]) => {
+        // 새로운 객체를 생성하여 반환 (React Query의 immutability 원칙 준수)
+        const newRemainingStocks = { ...data.remainingStocks };
+        Object.entries(newRemainingStocks).forEach(([company, remainingStock]) => {
           if (remainingStock === null) {
-            data.remainingStocks[company] = Infinity;
+            newRemainingStocks[company] = Infinity;
           }
         });
-        return data;
+
+        return {
+          ...data,
+          maxPersonalStockCount: data.maxPersonalStockCount ?? Infinity,
+          maxStockHintCount: data.maxStockHintCount ?? Infinity,
+          remainingStocks: newRemainingStocks,
+        };
       },
       ...options,
     },

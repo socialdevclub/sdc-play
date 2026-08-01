@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Modal, Input, Form, message } from 'antd';
 import styled from '@emotion/styled';
-import { useParams } from 'react-router-dom';
 import { useDebounce } from '@toss/react';
 import { Query } from '../../hook';
 
 interface Props {
+  partyId: string;
   isOpen: boolean;
   onSubmit: (nickname: string) => Promise<void>;
   onCancel: () => void;
@@ -87,18 +87,27 @@ const Instructions = styled.div`
   line-height: 1.5;
 `;
 
-const BoothNicknameModal: React.FC<Props> = ({ isOpen, onSubmit, onCancel }) => {
+const BoothNicknameModal: React.FC<Props> = ({ partyId, isOpen, onSubmit, onCancel }) => {
   const [form] = Form.useForm();
   const [nickname, setNickname] = useState('');
+  console.log('🚀 ~ BoothNicknameModal ~ nickname:', nickname);
   const [validationMessage, setValidationMessage] = useState('');
-
-  const { partyId } = useParams<{ partyId: string }>();
 
   // Use existing useQueryParty hook - only if we have a partyId
   const { data: party } = Query.Party.useQueryParty(partyId, {
     enabled: !!partyId && !!nickname && nickname.length >= 2,
     refetchInterval: 1000, // Poll for real-time updates
   });
+  console.log('🚀 ~ BoothNicknameModal ~ party:', party);
+
+  // Get stock ID from party's activityName
+  const stockId = party?.activityName;
+
+  // Fetch stock users to check for booth guest nicknames
+  const { data: stockUsers } = Query.Stock.useUserList(stockId, {
+    enabled: !!stockId && !!nickname && nickname.length >= 2,
+  });
+  console.log('🚀 ~ BoothNicknameModal ~ stockUsers:', stockUsers);
 
   // Extract regular user IDs (non-booth users) from party
   const regularUserIds = party?.joinedUserIds || [];
@@ -149,14 +158,20 @@ const BoothNicknameModal: React.FC<Props> = ({ isOpen, onSubmit, onCancel }) => 
     // Check if nickname is already taken in the party
     const normalizedValue = value.toLowerCase();
 
-    // Check if it's taken by a regular user
+    // Check if it's taken by a regular user (from profiles table)
     const takenByRegularUser =
       userProfiles?.data?.some((profile) => {
         // Compare nicknames case-insensitively
         return profile.username?.toLowerCase() === normalizedValue;
       }) || false;
 
-    const isAvailable = !takenByRegularUser;
+    // Check if it's taken by any stock user (includes booth guests)
+    const takenByStockUser =
+      stockUsers?.some((user) => {
+        return user.userInfo?.nickname?.toLowerCase() === normalizedValue;
+      }) || false;
+
+    const isAvailable = !takenByRegularUser && !takenByStockUser;
 
     setValidationMessage(isAvailable ? '✓ 사용 가능한 닉네임입니다.' : '이미 사용 중인 닉네임입니다.');
   }, 500);
@@ -183,14 +198,20 @@ const BoothNicknameModal: React.FC<Props> = ({ isOpen, onSubmit, onCancel }) => 
     if (partyId && party) {
       const normalizedNickname = nickname.toLowerCase();
 
-      // Check regular users
+      // Check regular users (from profiles table)
       const takenByRegularUser =
         userProfiles?.data?.some((profile) => {
           return profile.username?.toLowerCase() === normalizedNickname;
         }) || false;
 
-      if (takenByRegularUser) {
-        message.error('사용 가능한 닉네임을 입력해주세요.');
+      // Check stock users (includes booth guests)
+      const takenByStockUser =
+        stockUsers?.some((user) => {
+          return user.userInfo?.nickname?.toLowerCase() === normalizedNickname;
+        }) || false;
+
+      if (takenByRegularUser || takenByStockUser) {
+        message.error('이미 사용 중인 닉네임입니다. 다른 닉네임을 입력해주세요.');
         return;
       }
     }

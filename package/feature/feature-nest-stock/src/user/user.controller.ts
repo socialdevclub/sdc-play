@@ -15,7 +15,10 @@ export class UserController {
   }
 
   @Get('/recommended-partners')
-  async getRecommendedPartners(@Query('stockId') stockId: string, @Query('userId') userId: string): Promise<string[]> {
+  async getRecommendedPartners(
+    @Query('stockId') stockId: string,
+    @Query('userId') userId: string,
+  ): Promise<(string | undefined)[]> {
     return this.userService.getRecommendedPartners(stockId, userId);
   }
 
@@ -62,7 +65,7 @@ export class UserController {
   }
 
   @Post('/introduce')
-  async setIntroduce(@Body() body: Request.PostIntroduce): Promise<Response.SetIntroduce> {
+  async setIntroduce(@Body() body: Request.PostIntroduce): Promise<Response.SetIntroduce | null> {
     return this.userService.setIntroduce(body.stockId, body.userId, body.introduction);
   }
 

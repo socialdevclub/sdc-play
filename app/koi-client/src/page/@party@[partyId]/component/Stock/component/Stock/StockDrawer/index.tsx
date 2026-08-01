@@ -80,7 +80,7 @@ const StockDrawer = ({ drawerOpen, handleCloseDrawer, selectedCompany, stockMess
 
   // 주식 구매 한도 계산
   const currentStockCount = getStockStorage(selectedCompany)?.stockCountCurrent ?? 0; // 내가 보유한 해당 주식의 개수
-  const maxStockLimitByPlayer = Math.max(0, stock.maxPersonalStockCount - currentStockCount); // 플레이어 수 제한에 따른 최대 구매 가능 개수
+  const maxStockLimitByPlayer = Math.max(0, stock.maxPersonalStockCount ?? Infinity - currentStockCount); // 플레이어 수 제한에 따른 최대 구매 가능 개수
 
   // 최종 구매 가능 개수 계산 (돈, 남은 주식, 플레이어 수 제한 고려)
   const maxBuyableCountWithLimit = Math.min(maxBuyableCount, remainingStock ?? 0, maxStockLimitByPlayer);
@@ -127,7 +127,7 @@ const StockDrawer = ({ drawerOpen, handleCloseDrawer, selectedCompany, stockMess
       {(() => {
         switch (drawerState) {
           case 'OVERVIEW':
-            if (stock.gameMode === 'realism') {
+            if (stock.gameMode === 'realism' || stock.gameMode === 'v2') {
               return (
                 <StockOverviewRealism
                   stockId={stockId}

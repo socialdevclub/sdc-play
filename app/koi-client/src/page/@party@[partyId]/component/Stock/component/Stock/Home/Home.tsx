@@ -1,5 +1,6 @@
 import { MessageInstance } from 'antd/es/message/interface';
 import { Query } from '../../../../../../../hook';
+import { calculateCurrentValue, formatProfitRatio } from '../../../../../../../utils/stock';
 import useStockHoldings from '../../../hook/useStockHoldings.tsx';
 import StartLoan from '../StartLoan';
 import { Container, Divider, StickyBottom } from './Home.styles';
@@ -14,8 +15,7 @@ interface Props {
 
 const Home = ({ stockId, messageApi }: Props) => {
   // 공통 훅 사용으로 데이터 로직 분리
-  const { stock, users, user, allUserSellPriceDesc, gameTimeInMinutes, myInfos, futureInfos, allProfitDesc, userId } =
-    useStockInfo(stockId);
+  const { stock, users, user, allUserSellPriceDesc, allProfitDesc, userId, timeIdx } = useStockInfo(stockId);
   const { myAllSellPrice } = Query.Stock.useMyAllSellPrice({ stockId, userId });
   const { totalInvestment, totalProfitLoss } = useStockHoldings({ stockId, userId });
 
@@ -24,8 +24,8 @@ const Home = ({ stockId, messageApi }: Props) => {
   }
 
   // 내 수익률 계산
-  const getProfitRatio = (v: number) => ((v / stock.initialMoney) * 100 - 100).toFixed(2);
-  const moneyRatio = getProfitRatio(user.money + myAllSellPrice);
+  const currentValue = calculateCurrentValue(user.money, stock?.initialStockCount ?? 0, myAllSellPrice);
+  const moneyRatio = formatProfitRatio(currentValue, stock.initialMoney);
 
   return (
     <>
@@ -42,6 +42,7 @@ const Home = ({ stockId, messageApi }: Props) => {
           stock={stock}
           totalInvestment={totalInvestment}
           totalProfitLoss={totalProfitLoss}
+          timeIdx={timeIdx}
         />
       </Container>
       <Divider />

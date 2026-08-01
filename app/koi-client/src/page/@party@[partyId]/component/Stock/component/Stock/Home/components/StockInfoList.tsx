@@ -65,6 +65,7 @@ export const StockHoldingsList = ({ stockId, userId, messageApi }: StockHoldings
       value: company.value, // 종목별 고정 색상 추가
     })),
   ];
+  console.log('🚀 ~ StockHoldingsList ~ portfolioData:', portfolioData);
 
   const stockMessages = getStockMessages({
     companyName: selectedCompany,

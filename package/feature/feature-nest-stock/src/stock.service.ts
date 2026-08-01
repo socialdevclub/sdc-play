@@ -1,5 +1,13 @@
 import { HttpException, HttpStatus, Injectable, Inject, forwardRef } from '@nestjs/common';
-import type { Request, StockPhase, StockSchema, StockSchemaWithId } from 'shared~type-stock';
+import type {
+  Request,
+  StockPhase,
+  StockSchema,
+  StockSchemaWithId,
+  HintVisibility,
+  HintDetail,
+  CompanyInfo,
+} from 'shared~type-stock';
 import { getDateDistance } from '@toss/date';
 import { ceilToUnit } from '@toss/utils';
 import dayjs from 'dayjs';
@@ -7,6 +15,14 @@ import { StockConfig } from 'shared~config';
 import { UserService } from './user/user.service';
 import { StockRepository } from './stock.repository';
 import { UserRepository } from './user/user.repository';
+
+// V2 내부용 고정 가격 이벤트 타입 (저장하지 않음)
+type FixedPriceEvent = {
+  companyName: string;
+  round: number;
+  direction: 'up' | 'down';
+  fluctuation: number;
+};
 
 @Injectable()
 export class StockService {
@@ -93,7 +109,7 @@ export class StockService {
         flatCompanies.push({ companyName, fluctuation, price, round });
       };
 
-      stockNames.forEach((company) => {
+      stockNames?.forEach((company) => {
         for (let round = 0; round <= StockConfig.MAX_STOCK_IDX; round++) {
           if (round === 0) {
             defineCompany({
@@ -157,7 +173,13 @@ export class StockService {
     }[] = [];
 
     const pushUpward = (userId: string): void => {
+      if (!upwardCompanies.length) {
+        upwardCompanies = [..._upwardCompanies];
+      }
       const upwardCompany = upwardCompanies.shift();
+      if (!upwardCompany) {
+        throw new Error('Upward company not found');
+      }
       hintPlayers.push({
         companyName: upwardCompany.companyName,
         fluctuation: upwardCompany.fluctuation,
@@ -167,7 +189,13 @@ export class StockService {
     };
 
     const pushDownward = (userId: string): void => {
+      if (!downwardCompanies.length) {
+        downwardCompanies = [..._downwardCompanies];
+      }
       const downwardCompany = downwardCompanies.shift();
+      if (!downwardCompany) {
+        throw new Error('Downward company not found');
+      }
       hintPlayers.push({
         companyName: downwardCompany.companyName,
         fluctuation: downwardCompany.fluctuation,
@@ -259,7 +287,7 @@ export class StockService {
     };
 
     // 일반주식
-    stockNames.forEach((company) => {
+    stockNames?.forEach((company) => {
       for (let round = 0; round <= StockConfig.MAX_STOCK_IDX; round++) {
         if (round !== 3 && round !== 6 && round !== 9) {
           if (Math.floor(round / 3) > 0) {
@@ -327,6 +355,318 @@ export class StockService {
 
     return this.stockRepository.findOneAndUpdate(stockId, {
       companies: newCompanies,
+      isTransaction: false,
+      isVisibleRank: false,
+      maxStockHintCount,
+      remainingStocks,
+      startedTime: dayjs().toISOString(),
+      stockPhase: 'PLAYING',
+    });
+  }
+
+  // ============================================
+  // V2 헬퍼 함수들
+  // ============================================
+
+  /**
+   * A형 가시성: 종목명 O, 라운드 X, 방향 X, 변동폭 O
+   */
+  private static readonly VISIBILITY_TYPE_A: HintVisibility = {
+    companyName: true,
+    direction: false,
+    fluctuation: true,
+    round: false,
+  };
+
+  /**
+   * B형 가시성: 종목명 X, 라운드 O, 방향 O, 변동폭 O
+   */
+  private static readonly VISIBILITY_TYPE_B: HintVisibility = {
+    companyName: false,
+    direction: true,
+    fluctuation: true,
+    round: true,
+  };
+
+  /**
+   * 고정 가격 이벤트(찌라시) 생성
+   * - 이벤트 수: ceil(참가자수 × 3 / 4)
+   * - 변동 범위: 1~50% (중복 회피)
+   * - 라운드: 1~9에 랜덤 분배
+   */
+  private generateFixedPriceEvents(eventCount: number, stockNames: string[]): FixedPriceEvent[] {
+    const events: FixedPriceEvent[] = [];
+    const rounds = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+
+    // up/down 각각 절반씩
+    const upCount = Math.ceil(eventCount / 2);
+    const downCount = Math.floor(eventCount / 2);
+
+    // 변동률 풀 생성 (10~50)
+    const fluctuations = Array.from({ length: 41 }, (_, i) => i + 10);
+
+    // Fisher-Yates 셔플
+    const shuffle = <T>(arr: T[]): T[] => {
+      const result = [...arr];
+      for (let i = result.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [result[i], result[j]] = [result[j], result[i]];
+      }
+      return result;
+    };
+
+    const shuffledUp = shuffle(fluctuations);
+    const shuffledDown = shuffle(fluctuations);
+
+    // up 이벤트 생성
+    for (let i = 0; i < upCount; i++) {
+      events.push({
+        companyName: stockNames[Math.floor(Math.random() * stockNames.length)],
+        direction: 'up',
+        fluctuation: shuffledUp[i % 50],
+        round: rounds[Math.floor(Math.random() * rounds.length)],
+      });
+    }
+
+    // down 이벤트 생성
+    for (let i = 0; i < downCount; i++) {
+      events.push({
+        companyName: stockNames[Math.floor(Math.random() * stockNames.length)],
+        direction: 'down',
+        fluctuation: shuffledDown[i % 50],
+        round: rounds[Math.floor(Math.random() * rounds.length)],
+      });
+    }
+
+    // 최종 셔플 (up/down 섞기)
+    return shuffle(events);
+  }
+
+  /**
+   * V2용 회사 초기화
+   * - 1라운드(idx 0~2): 100,000원 고정, 가격 변동 없음
+   * - 이후 라운드: 기존 로직과 동일
+   */
+  private initializeCompaniesV2(stockNames: string[], events: FixedPriceEvent[]): Record<string, CompanyInfo[]> {
+    const newCompanies: Record<string, CompanyInfo[]> = {};
+
+    // 목표 변동률에 가장 가까운 100원 단위 가격 선택
+    const roundToClosestPercentage = (prevPrice: number, targetPercent: number, direction: 'up' | 'down'): number => {
+      const multiplier = direction === 'up' ? 1 + targetPercent / 100 : 1 - targetPercent / 100;
+      const exactPrice = prevPrice * multiplier;
+
+      const floorPrice = Math.floor(exactPrice / 100) * 100;
+      const ceilPrice = Math.ceil(exactPrice / 100) * 100;
+
+      // 각 가격의 실제 변동률 계산
+      const floorPercent = Math.abs((floorPrice - prevPrice) / prevPrice) * 100;
+      const ceilPercent = Math.abs((ceilPrice - prevPrice) / prevPrice) * 100;
+
+      // 목표 변동률과의 차이 비교
+      const floorDiff = Math.abs(floorPercent - targetPercent);
+      const ceilDiff = Math.abs(ceilPercent - targetPercent);
+
+      const selectedPrice = floorDiff <= ceilDiff ? floorPrice : ceilPrice;
+      return Math.max(selectedPrice, 100);
+    };
+
+    stockNames.forEach((company) => {
+      newCompanies[company] = [];
+
+      for (let round = 0; round <= StockConfig.MAX_STOCK_IDX; round++) {
+        // 1라운드 (round 0): 100,000원 고정
+        if (round === 0) {
+          newCompanies[company][round] = {
+            가격: StockConfig.INIT_STOCK_PRICE,
+            정보: [],
+          };
+          continue;
+        }
+
+        const prevPrice = newCompanies[company][round - 1].가격;
+
+        // 해당 라운드에 고정 가격 이벤트가 있는지 확인
+        const event = events.find((e) => e.companyName === company && e.round === round);
+
+        if (event) {
+          // 고정 가격 이벤트 적용
+          const price = roundToClosestPercentage(prevPrice, event.fluctuation, event.direction);
+
+          newCompanies[company][round] = {
+            fixedFluctuation: event.direction === 'up' ? event.fluctuation : -event.fluctuation,
+            가격: price,
+            정보: [],
+          };
+        } else {
+          // 이벤트 없으면 이전 라운드 가격 유지
+          newCompanies[company][round] = {
+            가격: prevPrice,
+            정보: [],
+          };
+        }
+      }
+    });
+
+    return newCompanies;
+  }
+
+  /**
+   * 카드 배분 (A형 2장 + B형 2장 × 이벤트 수)
+   * - 1인당 3장 배분
+   */
+  private distributeCards(
+    events: FixedPriceEvent[],
+    players: { userId: string }[],
+  ): { userId: string; event: FixedPriceEvent; isVisible: HintVisibility }[] {
+    // 각 이벤트당 4장 (A형 2장 + B형 2장)
+    const createCards = (eventList: FixedPriceEvent[]): { event: FixedPriceEvent; isVisible: HintVisibility }[] => {
+      const cards: { event: FixedPriceEvent; isVisible: HintVisibility }[] = [];
+      for (const event of eventList) {
+        cards.push({ event, isVisible: StockService.VISIBILITY_TYPE_A });
+        cards.push({ event, isVisible: StockService.VISIBILITY_TYPE_A });
+        cards.push({ event, isVisible: StockService.VISIBILITY_TYPE_B });
+        cards.push({ event, isVisible: StockService.VISIBILITY_TYPE_B });
+      }
+      return cards;
+    };
+
+    // Fisher-Yates 셔플
+    const shuffle = <T>(arr: T[]): T[] => {
+      const result = [...arr];
+      for (let i = result.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [result[i], result[j]] = [result[j], result[i]];
+      }
+      return result;
+    };
+
+    // 모든 카드 생성 후 셔플
+    const allCards = shuffle(createCards(events));
+
+    // 1인당 배분할 카드 수 계산
+    const cardsPerPlayer = 3;
+    const totalNeeded = players.length * cardsPerPlayer;
+
+    // 카드가 부족하면 경고 (로직상 발생하지 않아야 함)
+    if (allCards.length < totalNeeded) {
+      console.warn(`[V2] 카드 부족: 필요 ${totalNeeded}장, 보유 ${allCards.length}장`);
+    }
+
+    // 스마트 배분: 각 플레이어에게 최대한 다른 이벤트 카드를 배분
+    const distributed: { userId: string; event: FixedPriceEvent; isVisible: HintVisibility }[] = [];
+    const availableCards = [...allCards]; // 남은 카드들
+    const playerEventMap = new Map<string, Set<number>>(); // 플레이어별 받은 이벤트 라운드 추적
+
+    // 각 플레이어 초기화
+    for (const player of players) {
+      playerEventMap.set(player.userId, new Set());
+    }
+
+    // 라운드 로빈 방식으로 카드 배분 (한 장씩 돌아가며)
+    for (let cardRound = 0; cardRound < cardsPerPlayer; cardRound++) {
+      // 플레이어 순서도 셔플하여 공정성 확보
+      const shuffledPlayers = shuffle([...players]);
+
+      for (const player of shuffledPlayers) {
+        if (availableCards.length === 0) break;
+
+        const playerEvents = playerEventMap.get(player.userId)!;
+
+        // 1순위: 아직 받지 않은 이벤트의 카드 찾기
+        let selectedIndex = availableCards.findIndex((card) => !playerEvents.has(card.event.round));
+
+        // 2순위: 없으면 아무 카드나 선택
+        if (selectedIndex === -1) {
+          selectedIndex = 0;
+        }
+
+        // 카드 배분
+        const selectedCard = availableCards.splice(selectedIndex, 1)[0];
+        playerEvents.add(selectedCard.event.round);
+        distributed.push({ userId: player.userId, ...selectedCard });
+      }
+    }
+
+    return distributed;
+  }
+
+  /**
+   * 카드 정보를 회사에 주입
+   * - 정보: userId 목록 (기존 호환)
+   * - hints: 카드 상세 정보 (V2 전용)
+   */
+  private injectCardsToCompanies(
+    companies: Record<string, CompanyInfo[]>,
+    cards: { userId: string; event: FixedPriceEvent; isVisible: HintVisibility }[],
+  ): void {
+    for (const card of cards) {
+      const { userId, event, isVisible } = card;
+      const companyInfo = companies[event.companyName]?.[event.round];
+
+      if (companyInfo) {
+        // 정보에 userId 추가 (기존 호환)
+        if (!companyInfo.정보.includes(userId)) {
+          companyInfo.정보.push(userId);
+        }
+
+        // hints에 상세 정보 추가 (V2 전용)
+        if (!companyInfo.hints) {
+          companyInfo.hints = [];
+        }
+        const hintDetail: HintDetail = { isVisible, userId };
+        companyInfo.hints.push(hintDetail);
+      }
+    }
+  }
+
+  /**
+   * initStockV2 - V2 게임 모드 초기화
+   *
+   * 특징:
+   * - 1라운드: 100,000원 고정, 가격 변동 없음 (거래 연습)
+   * - 고정 가격 이벤트(찌라시): 게임 시작 시 미리 계산
+   * - 카드 시스템: A형/B형 가시성 기반
+   * - 초기 자산: 50만원 + 랜덤 주식 5주
+   */
+  async initStockV2(stockId: string, body: Request.PostStockInit): Promise<StockSchemaWithId | null> {
+    const { stockNames, maxMarketStockCount, maxStockHintCount, initialStockCount = 0 } = body;
+
+    if (!stockNames) {
+      throw new Error('Stock names not found');
+    }
+
+    // 1. 참가자 조회
+    const players = await this.userService.getUserList(stockId);
+
+    // 2. 고정 가격 이벤트 생성 (이벤트 수 = ceil(참가자수 × 3 / 4))
+    const eventCount = Math.ceil((players.length * 3) / 4);
+    const events = this.generateFixedPriceEvents(eventCount, stockNames);
+
+    // 3. 회사 초기화 (1라운드 100,000원 고정)
+    const companies = this.initializeCompaniesV2(stockNames, events);
+
+    // 4. 카드 배분 (A형 2장 + B형 2장 × 이벤트 수)
+    const cards = this.distributeCards(events, players);
+
+    // 5. 정보 필드에 카드 주입
+    this.injectCardsToCompanies(companies, cards);
+
+    // 6. 주식 재고 주입
+    const remainingStocks: Record<string, number> = {};
+    stockNames?.forEach((company) => {
+      remainingStocks[company] = maxMarketStockCount;
+    });
+
+    // 7. 저장 (V2 전용 필드 포함)
+    // events는 저장하지 않음 - 이미 companies의 fixedFluctuation에 반영됨
+    return this.stockRepository.findOneAndUpdate(stockId, {
+      companies,
+      gameMode: 'v2',
+      gradeConfig: {
+        multipliers: { ant: 2.0, shrimp: 1.0, whale: 0.5 },
+        thresholds: { shrimp: 0.7, whale: 0.3 },
+      },
+      initialStockCount, // V2: 초기 지급 주식 수량 (게임 설정에서 선택)
       isTransaction: false,
       isVisibleRank: false,
       maxStockHintCount,

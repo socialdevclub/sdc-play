@@ -1,8 +1,10 @@
 import { getDateDistance } from '@toss/date';
 import { objectEntries } from '@toss/utils';
 import dayjs from 'dayjs';
+import { StockConfig } from 'shared~config';
 import { CompanyInfo, StockStorageSchema } from 'shared~type-stock';
 import { GetStock } from 'shared~type-stock/Response';
+import { LEVEL_INFO, LevelInfoType } from '../config/level';
 import {
   ANIMAL_NAME,
   REMAINING_STOCK_THRESHOLD,
@@ -265,4 +267,69 @@ export const calculateCurrentPortfolio = ({
   });
 
   return portfolio;
+};
+
+// ============================================
+// 수익률 계산 공통 함수
+// ============================================
+
+/**
+ * 현재 자산 가치를 계산합니다 (Home 공식)
+ * currentValue = userMoney - initialStockCount * INIT_STOCK_PRICE + myAllSellPrice
+ *
+ * @param userMoney - 사용자의 현재 현금
+ * @param initialStockCount - 초기 보유 주식 수
+ * @param myAllSellPrice - 현재 보유 주식의 시가 총액
+ */
+export const calculateCurrentValue = (userMoney: number, initialStockCount: number, myAllSellPrice: number): number => {
+  return userMoney - initialStockCount * StockConfig.INIT_STOCK_PRICE + myAllSellPrice;
+};
+
+/**
+ * 수익률을 계산합니다 (백분율)
+ *
+ * @param currentValue - 현재 자산 가치
+ * @param initialMoney - 초기 자산
+ * @returns 수익률 (예: 50.5는 50.5% 수익)
+ */
+export const calculateProfitRatio = (currentValue: number, initialMoney: number): number => {
+  if (initialMoney === 0) return 0;
+  return (currentValue / initialMoney) * 100 - 100;
+};
+
+/**
+ * 수익률을 소수점 2자리 문자열로 포맷합니다
+ *
+ * @param currentValue - 현재 자산 가치
+ * @param initialMoney - 초기 자산
+ * @returns 포맷된 수익률 문자열 (예: "50.50")
+ */
+export const formatProfitRatio = (currentValue: number, initialMoney: number): string => {
+  return calculateProfitRatio(currentValue, initialMoney).toFixed(2);
+};
+
+/**
+ * 수익률에 따른 레벨 정보를 반환합니다
+ *
+ * @param ratio - 수익률 (숫자 또는 문자열)
+ * @returns 레벨 정보와 인덱스
+ */
+export const getLevelByRatio = (ratio: number | string): LevelInfoType & { index: number } => {
+  // 문자열인 경우 숫자로 변환 ('%' 제거)
+  const percentage = typeof ratio === 'number' ? ratio : parseFloat(ratio.replace('%', ''));
+
+  const levelIndex = LEVEL_INFO.findIndex((level) => percentage >= level.min && percentage < level.max);
+  const level = LEVEL_INFO[levelIndex];
+
+  return level ? { ...level, index: levelIndex } : { ...LEVEL_INFO[0], index: 0 };
+};
+
+/**
+ * 수익률에 따른 동물 라벨만 반환합니다
+ *
+ * @param ratio - 수익률 (숫자)
+ * @returns 동물 라벨 (예: "당돌한 햄스터")
+ */
+export const getAnimalLabelByRatio = (ratio: number): string => {
+  return getLevelByRatio(ratio).label;
 };

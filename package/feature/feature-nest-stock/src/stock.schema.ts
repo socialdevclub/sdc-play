@@ -1,6 +1,6 @@
 import { randomUUID } from 'crypto';
 import dayjs from 'dayjs';
-import { CompanyInfo, StockGameMode, StockPhase, StockSchema } from 'shared~type-stock';
+import { CompanyInfo, GradeConfig, StockGameMode, StockPhase, StockSchema } from 'shared~type-stock';
 
 export class Stock implements StockSchema {
   _id: string;
@@ -27,11 +27,16 @@ export class Stock implements StockSchema {
 
   hasLoan: boolean;
 
-  maxStockHintCount: number;
+  maxStockHintCount: number | null;
 
-  maxPersonalStockCount: number;
+  maxPersonalStockCount: number | null;
 
   gameMode: StockGameMode;
+
+  // V2 전용 필드
+  initialStockCount?: number;
+
+  gradeConfig?: GradeConfig;
 
   constructor() {
     this._id = randomUUID();

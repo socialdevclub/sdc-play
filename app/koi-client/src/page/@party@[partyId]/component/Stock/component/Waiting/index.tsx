@@ -10,6 +10,7 @@ import {
   fluctuationMenuItems,
   gameModeMenuItems,
   initialMoneyMenuItems,
+  initialStockCountMenuItems,
   maxMarketStockCountMenuItems,
   maxPersonalStockCountMenuItems,
 } from './constant';
@@ -53,6 +54,7 @@ const Waiting = ({ HeaderComponent = <></>, stockId }: Props) => {
   const [customMaxStock, setCustomMaxStock] = useState<string>('');
   const [maxPersonalStockType, setMaxPersonalStockType] = useState<string>('infinity');
   const [customMaxPersonalStock, setCustomMaxPersonalStock] = useState<string>('');
+  const [v2InitialStockCount, setV2InitialStockCount] = useState<number>(5);
   const [gameOption, setGameOption] = useState({
     hasLoan: true,
     isTransaction: true,
@@ -229,6 +231,15 @@ const Waiting = ({ HeaderComponent = <></>, stockId }: Props) => {
         maxStockHintCount: 6,
         stockNames: gameOption.stockNames,
       });
+    } else if (stock.gameMode === 게임모드.V2) {
+      await mutateInitStock({
+        gameMode: stock.gameMode,
+        initialStockCount: v2InitialStockCount,
+        isCustomCompanies: false,
+        maxMarketStockCount: Infinity,
+        maxStockHintCount: Infinity,
+        stockNames: gameOption.stockNames,
+      });
     }
     const maxPersonalStockCount = stock.gameMode === 게임모드.STOCK ? getMaxPersonalStockCount() : Infinity;
     await mutateUpdateGame({
@@ -369,7 +380,8 @@ const Waiting = ({ HeaderComponent = <></>, stockId }: Props) => {
                           mutateUpdateGame({
                             _id: stockId,
                             gameMode: key as 게임모드,
-                            initialMoney: key === 게임모드.REALISM ? 100_000_000 : 1_000_000,
+                            initialMoney:
+                              key === 게임모드.REALISM ? 100_000_000 : key === 게임모드.V2 ? 500_000 : 1_000_000,
                           });
                           if (key === 게임모드.REALISM) {
                             setGameOption((prev) => ({
@@ -391,6 +403,14 @@ const Waiting = ({ HeaderComponent = <></>, stockId }: Props) => {
                               maxStockHintCount: 6,
                               stockNames: DALTO_NAMES,
                             }));
+                          } else if (key === 게임모드.V2) {
+                            setGameOption((prev) => ({
+                              ...prev,
+                              hasLoan: false,
+                              maxStockHintCount: Infinity,
+                              stockNames: STOCK_NAMES,
+                            }));
+                            setV2InitialStockCount(5);
                           }
                         },
                         style: gameOptionDropdownStyle,
@@ -444,6 +464,36 @@ const Waiting = ({ HeaderComponent = <></>, stockId }: Props) => {
                       </GameOptionValue>
                     </Dropdown>
                   </GameOption>
+                  {stock?.gameMode === 게임모드.V2 && (
+                    <GameOption id="game-option-initial-stock-count-container">
+                      <GameOptionTitle>초기 주식 제공</GameOptionTitle>
+                      <Dropdown
+                        menu={{
+                          inlineIndent: 10,
+                          items: initialStockCountMenuItems,
+                          onClick: ({ key }) => setV2InitialStockCount(Number(key)),
+                          style: gameOptionDropdownStyle,
+                        }}
+                        trigger={['click']}
+                        getPopupContainer={() => document.getElementById('game-option-initial-stock-count-container')!}
+                      >
+                        <GameOptionValue dark>
+                          <GameOptionText>
+                            {(() => {
+                              const found = initialStockCountMenuItems?.find(
+                                (item) => Number(item?.key) === v2InitialStockCount,
+                              );
+                              if (found && 'label' in found) {
+                                return found.label;
+                              }
+                              return `${v2InitialStockCount}주`;
+                            })()}
+                          </GameOptionText>
+                          <ChevronDown />
+                        </GameOptionValue>
+                      </Dropdown>
+                    </GameOption>
+                  )}
                   {stock?.gameMode === 게임모드.STOCK && (
                     <>
                       <GameOption id="game-option-max-stock-container">

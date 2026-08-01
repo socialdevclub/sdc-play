@@ -125,5 +125,6 @@ export const 게임모드 = {
   DALTO: 'dalto',
   REALISM: 'realism',
   STOCK: 'stock',
+  V2: 'v2',
 } as const;
 export type 게임모드 = (typeof 게임모드)[keyof typeof 게임모드];

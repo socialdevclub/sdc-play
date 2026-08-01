@@ -32,6 +32,10 @@ export const fluctuationMenuItems: MenuProps['items'] = [
 
 export const initialMoneyMenuItems: MenuProps['items'] = [
   {
+    key: 500_000,
+    label: <DropdownItem>50만원</DropdownItem>,
+  },
+  {
     key: 1_000_000,
     label: <DropdownItem>100만원</DropdownItem>,
   },
@@ -78,5 +82,13 @@ export const maxPersonalStockCountMenuItems: MenuProps['items'] = [
 export const gameModeMenuItems: MenuProps['items'] = [
   { key: 'stock', label: <DropdownItem>주식게임</DropdownItem> },
   { key: 'realism', label: <DropdownItem>쀼머니게임</DropdownItem> },
-  { key: 'dalto', label: <DropdownItem>달토</DropdownItem> },
+  { key: 'v2', label: <DropdownItem>V2</DropdownItem> },
+];
+
+export const initialStockCountMenuItems: MenuProps['items'] = [
+  { key: 0, label: <DropdownItem>0주 (없음)</DropdownItem> },
+  { key: 1, label: <DropdownItem>1주</DropdownItem> },
+  { key: 2, label: <DropdownItem>2주</DropdownItem> },
+  { key: 3, label: <DropdownItem>3주</DropdownItem> },
+  { key: 5, label: <DropdownItem>5주</DropdownItem> },
 ];

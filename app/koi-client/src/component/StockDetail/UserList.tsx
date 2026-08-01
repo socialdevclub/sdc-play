@@ -1,8 +1,18 @@
 import React from 'react';
 import styled from '@emotion/styled';
+import type { PlayerGrade } from 'shared~type-stock';
 import { Query } from '../../hook';
 import { fetchProfileByUsername } from '../../hook/query/Supabase/useQueryProfileByUsername';
 import { ControlButton, ControlButtonGroup } from '.';
+
+/**
+ * 등급 정보
+ */
+const GRADE_INFO: Record<PlayerGrade, { emoji: string; label: string; color: string }> = {
+  whale: { emoji: '🐋', label: '고래', color: '#3B82F6' },
+  shrimp: { emoji: '🦐', label: '새우', color: '#F97316' },
+  ant: { emoji: '🐜', label: '개미', color: '#EF4444' },
+};
 
 interface UserListProps {
   stockId: string;
@@ -82,24 +92,30 @@ const UserList: React.FC<UserListProps> = ({ stockId }) => {
       </UserStats>
 
       <UserGridContainer>
-        {users?.map((user) => (
-          <UserCard key={user.userId}>
-            <UserCardContent>
-              <UserName>
-                <UserIndex>{user.index}</UserIndex>
-                {profiles?.data?.find((v) => v.id === user.userId)?.username || user.userInfo.nickname}
-              </UserName>
-              {!user.userInfo.introduction && <MissingIntro>자기소개 미작성</MissingIntro>}
-            </UserCardContent>
-            <RemoveButton
-              onClick={() => {
-                mutateRemoveUser({ stockId, userId: user.userId });
-              }}
-            >
-              제거
-            </RemoveButton>
-          </UserCard>
-        ))}
+        {users?.map((user) => {
+          const grade = user.grade;
+          const gradeInfo = grade ? GRADE_INFO[grade] : null;
+
+          return (
+            <UserCard key={user.userId}>
+              <UserCardContent>
+                <UserName>
+                  <UserIndex>{user.index}</UserIndex>
+                  {profiles?.data?.find((v) => v.id === user.userId)?.username || user.userInfo.nickname}
+                  {gradeInfo && <GradeBadge color={gradeInfo.color}>{gradeInfo.emoji}</GradeBadge>}
+                </UserName>
+                {!user.userInfo.introduction && <MissingIntro>자기소개 미작성</MissingIntro>}
+              </UserCardContent>
+              <RemoveButton
+                onClick={() => {
+                  mutateRemoveUser({ stockId, userId: user.userId });
+                }}
+              >
+                제거
+              </RemoveButton>
+            </UserCard>
+          );
+        })}
       </UserGridContainer>
 
       {introNotCompletedUsers.length > 0 && (
@@ -227,6 +243,18 @@ const UserIndex = styled.span`
   height: 1.5rem;
   border-radius: 50%;
   flex-shrink: 0;
+`;
+
+const GradeBadge = styled.span<{ color: string }>`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  margin-left: 0.25rem;
+  padding: 0.15rem 0.3rem;
+  background-color: ${({ color }) => `${color}15`};
+  border: 1px solid ${({ color }) => `${color}40`};
+  border-radius: 4px;
 `;
 
 const MissingIntro = styled.div`

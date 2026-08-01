@@ -1,18 +1,12 @@
 import { Body, Controller, Delete, Get, HttpException, HttpStatus, Patch, Post, Query } from '@nestjs/common';
 import type { Request, Response, StockSchema } from 'shared~type-stock';
-import { HttpService } from '@nestjs/axios';
 import { randomUUID } from 'crypto';
-import type { Stock } from './stock.schema';
 import { StockService } from './stock.service';
 import { StockProcessor } from './stock.processor';
 
 @Controller('stock')
 export class StockController {
-  constructor(
-    private readonly stockService: StockService,
-    private readonly httpService: HttpService,
-    private readonly stockProcessor: StockProcessor,
-  ) {}
+  constructor(private readonly stockService: StockService, private readonly stockProcessor: StockProcessor) {}
 
   @Get()
   async getStock(@Query('stockId') stockId: string): Promise<Response.GetStock> {
@@ -25,7 +19,7 @@ export class StockController {
   }
 
   @Patch()
-  updateStock(@Body() body: Request.PatchUpdateStock): Promise<StockSchema> {
+  updateStock(@Body() body: Request.PatchUpdateStock): Promise<StockSchema | null> {
     return this.stockService.findOneByIdAndUpdate(body);
   }
 
@@ -35,7 +29,7 @@ export class StockController {
   }
 
   @Get('/list')
-  async getStockList(): Promise<Stock[]> {
+  async getStockList(): Promise<StockSchema[]> {
     const stockList = await this.stockService.find();
     return stockList;
   }
@@ -43,11 +37,14 @@ export class StockController {
   @Get('/phase')
   async getStockPhase(@Query('stockId') stockId: string): Promise<Response.GetStockPhase> {
     const stock = await this.stockService.findOneById(stockId);
+    if (!stock) {
+      throw new HttpException('Stock not found', HttpStatus.NOT_FOUND);
+    }
     return { stockPhase: stock.stockPhase };
   }
 
   @Post('/phase')
-  async setStockPhase(@Body() body: Request.PostSetStockPhase): Promise<StockSchema> {
+  async setStockPhase(@Body() body: Request.PostSetStockPhase): Promise<StockSchema | null> {
     return this.stockService.setStockPhase(body.stockId, body.phase);
   }
 
@@ -57,15 +54,18 @@ export class StockController {
   }
 
   @Post('/reset')
-  resetStock(@Query('stockId') stockId: string): Promise<StockSchema> {
+  resetStock(@Query('stockId') stockId: string): Promise<StockSchema | null> {
     return this.stockService.resetStock(stockId);
   }
 
   @Post('/init')
-  initStock(@Query('stockId') stockId: string, @Body() body: Request.PostStockInit): Promise<StockSchema> {
+  initStock(@Query('stockId') stockId: string, @Body() body: Request.PostStockInit): Promise<StockSchema | null> {
     console.log('🚀 ~ StockController ~ initStock ~ body:', body);
     if (body.gameMode === 'dalto') {
       return this.stockService.initStockDalto(stockId, body);
+    }
+    if (body.gameMode === 'v2') {
+      return this.stockService.initStockV2(stockId, body);
     }
     return this.stockService.initStock(stockId, body);
   }
@@ -79,7 +79,7 @@ export class StockController {
   }
 
   @Post('/draw-info')
-  buyStockInfo(@Body() body: Request.PostDrawStockInfo): Promise<StockSchema> {
+  buyStockInfo(@Body() body: Request.PostDrawStockInfo): Promise<StockSchema | null> {
     return this.stockService.drawStockInfo(body.stockId, body);
   }
 
@@ -92,7 +92,7 @@ export class StockController {
   }
 
   @Post('/finish')
-  async stockFinish(@Query('stockId') stockId: string): Promise<StockSchema> {
+  async stockFinish(@Query('stockId') stockId: string): Promise<StockSchema | null> {
     await this.stockService.findOneByIdAndUpdate({ _id: stockId, isTransaction: false });
     return this.stockService.allUserSellStock(stockId);
   }

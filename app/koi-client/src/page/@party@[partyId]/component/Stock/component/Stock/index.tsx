@@ -3,9 +3,9 @@ import { SwitchCase } from '@toss/react';
 import { Suspense, useCallback, useEffect, useMemo, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { message } from 'antd';
-import dayjs from 'dayjs';
 import Home from './Home/Home';
 import Information from './Information';
+import InformationV2 from './InformationV2';
 import { Tabs, type TabsProps } from './Tabs';
 import StockInfoList from './StockInfoList.tsx';
 import Portfolio from './Portfolio/index.tsx';
@@ -46,41 +46,41 @@ const Stock = ({ stockId }: Props) => {
     }
   }, [searchParams]);
 
-  const { mutateAsync: mutateUpdateGame } = Query.Stock.useUpdateStock();
-  const { mutateAsync: mutateSetPhase } = Query.Stock.useSetPhase();
-  const { mutateAsync: mutateFinishStock } = Query.Stock.useFinishStock(stockId);
+  // const { mutateAsync: mutateUpdateGame } = Query.Stock.useUpdateStock();
+  // const { mutateAsync: mutateSetPhase } = Query.Stock.useSetPhase();
+  // const { mutateAsync: mutateFinishStock } = Query.Stock.useFinishStock(stockId);
   const { data: stock } = Query.Stock.useQueryStock(stockId);
 
-  const startedTime = dayjs(stock?.startedTime).toDate();
-  const elapsedTime = Math.floor((Date.now() - startedTime.getTime()) / 1000 / 60); // 분 단위로 변환
+  // const startedTime = dayjs(stock?.startedTime).toDate();
+  // const elapsedTime = Math.floor((Date.now() - startedTime.getTime()) / 1000 / 60); // 분 단위로 변환
 
   // 주식 게임 자동 종료 및 정산
-  useEffect(() => {
-    function handleEndGame() {
-      mutateFinishStock({ stockId }); // 주식 종료 및 정산
-      // FIXME: 큰 스크린 모드에서는 결과 페이지로 이동하지 않는다.
-      // 결과 페이지로 이동
-      mutateSetPhase({ phase: 'RESULT', stockId });
-      messageApi.open({
-        content: '게임이 종료되었습니다.',
-        duration: 2,
-        type: 'info',
-      });
-    }
-    // 변동 주기(fluctuationInterval) * 9 >= 경과 시간 일 때 게임 결산 및 결과 페이지 이동한다.
-    if (stock?.isTransaction && elapsedTime >= stock.fluctuationsInterval * 9) {
-      handleEndGame();
-    }
-  }, [
-    elapsedTime,
-    messageApi,
-    mutateFinishStock,
-    mutateSetPhase,
-    mutateUpdateGame,
-    stock?.fluctuationsInterval,
-    stock?.isTransaction,
-    stockId,
-  ]);
+  // useEffect(() => {
+  //   function handleEndGame() {
+  //     mutateFinishStock({ stockId }); // 주식 종료 및 정산
+  //     // FIXME: 큰 스크린 모드에서는 결과 페이지로 이동하지 않는다.
+  //     // 결과 페이지로 이동
+  //     mutateSetPhase({ phase: 'RESULT', stockId });
+  //     messageApi.open({
+  //       content: '게임이 종료되었습니다.',
+  //       duration: 2,
+  //       type: 'info',
+  //     });
+  //   }
+  //   // 변동 주기(fluctuationInterval) * 9 >= 경과 시간 일 때 게임 결산 및 결과 페이지 이동한다.
+  //   if (stock?.isTransaction && elapsedTime >= stock.fluctuationsInterval * 9) {
+  //     handleEndGame();
+  //   }
+  // }, [
+  //   elapsedTime,
+  //   messageApi,
+  //   mutateFinishStock,
+  //   mutateSetPhase,
+  //   mutateUpdateGame,
+  //   stock?.fluctuationsInterval,
+  //   stock?.isTransaction,
+  //   stockId,
+  // ]);
 
   const onClickTab = useCallback(
     (key: string) => {
@@ -120,7 +120,7 @@ const Stock = ({ stockId }: Props) => {
             value={searchParams.get('page') ?? '홈'}
             caseBy={{
               // 룰: <Rule stockId={stockId} />,
-              정보: <Information stockId={stockId} />,
+              정보: stock?.gameMode === 'v2' ? <InformationV2 stockId={stockId} /> : <Information stockId={stockId} />,
               주식: <StockInfoList stockId={stockId} />,
               포트폴리오: <Portfolio stockId={stockId} messageApi={messageApi} />,
               홈: <Home stockId={stockId} messageApi={messageApi} />,

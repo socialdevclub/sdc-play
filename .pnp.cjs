@@ -8378,6 +8378,15 @@ const RAW_RUNTIME_STATE =
         "linkType": "HARD"\
       }]\
     ]],\
+    ["@types/ua-parser-js", [\
+      ["npm:0.7.39", {\
+        "packageLocation": "./.yarn/cache/@types-ua-parser-js-npm-0.7.39-23053990d8-8d173a79b3.zip/node_modules/@types/ua-parser-js/",\
+        "packageDependencies": [\
+          ["@types/ua-parser-js", "npm:0.7.39"]\
+        ],\
+        "linkType": "HARD"\
+      }]\
+    ]],\
     ["@types/uuid", [\
       ["npm:9.0.8", {\
         "packageLocation": "./.yarn/cache/@types-uuid-npm-9.0.8-3eeeaa5abb-b8c60b7ba8.zip/node_modules/@types/uuid/",\
@@ -16245,6 +16254,7 @@ const RAW_RUNTIME_STATE =
           ["@types/node", "npm:18.19.76"],\
           ["@types/react", "npm:18.3.18"],\
           ["@types/react-dom", "virtual:3781e4e4653b304d27938f77fea1ab9b6773bbd3d16c365c26414696786c5b1cc2fb193f577d466767d7df01d7ff1a4418f0d78f32cd3cf5e383212925d5a89b#npm:18.3.5"],\
+          ["@types/ua-parser-js", "npm:0.7.39"],\
           ["@typescript-eslint/eslint-plugin", "virtual:3781e4e4653b304d27938f77fea1ab9b6773bbd3d16c365c26414696786c5b1cc2fb193f577d466767d7df01d7ff1a4418f0d78f32cd3cf5e383212925d5a89b#npm:6.7.2"],\
           ["@typescript-eslint/parser", "virtual:3781e4e4653b304d27938f77fea1ab9b6773bbd3d16c365c26414696786c5b1cc2fb193f577d466767d7df01d7ff1a4418f0d78f32cd3cf5e383212925d5a89b#npm:6.7.2"],\
           ["@vitejs/plugin-react-swc", "virtual:3781e4e4653b304d27938f77fea1ab9b6773bbd3d16c365c26414696786c5b1cc2fb193f577d466767d7df01d7ff1a4418f0d78f32cd3cf5e383212925d5a89b#npm:3.3.2"],\
@@ -16296,6 +16306,7 @@ const RAW_RUNTIME_STATE =
           ["sort-by", "npm:1.2.0"],\
           ["turbo", "npm:1.11.2"],\
           ["typescript", "patch:typescript@npm%3A5.3.3#optional!builtin<compat/typescript>::version=5.3.3&hash=e012d7"],\
+          ["ua-parser-js", "npm:1.0.41"],\
           ["vite", "virtual:3781e4e4653b304d27938f77fea1ab9b6773bbd3d16c365c26414696786c5b1cc2fb193f577d466767d7df01d7ff1a4418f0d78f32cd3cf5e383212925d5a89b#npm:7.0.4"],\
           ["vite-plugin-commonjs", "npm:0.9.0"],\
           ["vitest", "virtual:3781e4e4653b304d27938f77fea1ab9b6773bbd3d16c365c26414696786c5b1cc2fb193f577d466767d7df01d7ff1a4418f0d78f32cd3cf5e383212925d5a89b#npm:3.2.4"]\
@@ -22362,6 +22373,15 @@ const RAW_RUNTIME_STATE =
           "@types/typescript",\
           "eslint",\
           "typescript"\
+        ],\
+        "linkType": "HARD"\
+      }]\
+    ]],\
+    ["ua-parser-js", [\
+      ["npm:1.0.41", {\
+        "packageLocation": "./.yarn/cache/ua-parser-js-npm-1.0.41-9bd7ee9e99-86f2b624ff.zip/node_modules/ua-parser-js/",\
+        "packageDependencies": [\
+          ["ua-parser-js", "npm:1.0.41"]\
         ],\
         "linkType": "HARD"\
       }]\

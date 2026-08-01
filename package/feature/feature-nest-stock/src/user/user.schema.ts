@@ -1,6 +1,7 @@
 import dayjs from 'dayjs';
 import { StockConfig } from 'shared~config';
 import {
+  PlayerGrade,
   StockStorageSchema,
   StockUserForm,
   StockUserInfoSchema,
@@ -11,21 +12,21 @@ import {
 const INIT_USER_MONEY = 1_000_000;
 
 export class StockUserStorage implements StockStorageSchema {
-  companyName: string;
+  companyName!: string;
 
-  stockAveragePrice: number;
+  stockAveragePrice!: number;
 
-  stockAveragePriceHistory: number[];
+  stockAveragePriceHistory!: number[];
 
-  stockCountCurrent: number;
+  stockCountCurrent!: number;
 
-  stockCountHistory: number[];
+  stockCountHistory!: number[];
 }
 
 export class StockUserInfo implements StockUserInfoSchema {
-  gender: string;
+  gender!: string;
 
-  nickname: string;
+  nickname!: string;
 
   introduction?: string;
 }
@@ -50,6 +51,9 @@ export class StockUser implements StockUserSchema {
   stockStorages: StockStorageSchema[];
 
   resultByRound: number[];
+
+  // V2 전용
+  grade?: PlayerGrade;
 
   constructor(required: Pick<StockUserSchema, StockUserRequired>, partial: StockUserForm, companyNames: string[]) {
     this.userId = required.userId;

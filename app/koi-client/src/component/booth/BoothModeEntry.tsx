@@ -4,6 +4,7 @@ import { Button } from 'antd';
 import BoothNicknameModal from './BoothNicknameModal';
 
 interface Props {
+  partyId: string;
   onGuestJoin: (nickname: string) => Promise<void>;
   onAccountLogin: () => void;
 }
@@ -75,7 +76,7 @@ const SecondaryButton = styled(Button)`
   }
 `;
 
-const BoothModeEntry: React.FC<Props> = ({ onGuestJoin, onAccountLogin }) => {
+const BoothModeEntry: React.FC<Props> = ({ partyId, onGuestJoin, onAccountLogin }) => {
   const [isNicknameModalOpen, setIsNicknameModalOpen] = useState(false);
 
   const handleGuestClick = () => {
@@ -113,6 +114,7 @@ const BoothModeEntry: React.FC<Props> = ({ onGuestJoin, onAccountLogin }) => {
       </Card>
 
       <BoothNicknameModal
+        partyId={partyId}
         isOpen={isNicknameModalOpen}
         onSubmit={handleNicknameSubmit}
         onCancel={handleNicknameCancel}

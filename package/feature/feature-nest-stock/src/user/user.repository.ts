@@ -96,7 +96,7 @@ export class UserRepository {
 
         const { Items } = await this.dynamoDBClient.send(command);
 
-        Items.sort((a, b) => a.index - b.index);
+        Items?.sort((a, b) => a.index - b.index);
 
         return (Items || []) as StockUserSchema[];
       }
@@ -109,7 +109,7 @@ export class UserRepository {
 
       const { Items } = await this.dynamoDBClient.send(command);
 
-      Items.sort((a, b) => a.index - b.index);
+      Items?.sort((a, b) => a.index - b.index);
 
       return (Items || []) as StockUserSchema[];
     } catch (error) {
@@ -276,26 +276,61 @@ export class UserRepository {
     }
   }
 
+  /**
+   * 랜덤 종목 선택 (V2 초기 주식 지급용)
+   * - 중복 허용하여 count개 선택
+   */
+  private selectRandomCompanies(companies: string[], count: number): string[] {
+    const result: string[] = [];
+    for (let i = 0; i < count; i++) {
+      const randomIndex = Math.floor(Math.random() * companies.length);
+      result.push(companies[randomIndex]);
+    }
+    return result;
+  }
+
   async initializeUsers(stock: StockSchema): Promise<boolean> {
     try {
       const companies = Object.keys(stock.companies);
-      const stockStorages = companies.map((company) => {
-        return {
-          companyName: company,
-          stockAveragePrice: 0,
-          stockAveragePriceHistory: new Array(StockConfig.MAX_STOCK_IDX + 1).fill(0),
-          stockCountCurrent: 0,
-          stockCountHistory: new Array(StockConfig.MAX_STOCK_IDX + 1).fill(0),
-        } as StockStorageSchema;
-      });
-
       const users = await this.find({ stockId: stock._id });
+
       const updatePromises = users.map((user) => {
+        // V2 모드일 때 초기 주식 지급
+        const initialStockCount = stock.initialStockCount ?? 0;
+        const randomCompanies = initialStockCount > 0 ? this.selectRandomCompanies(companies, initialStockCount) : [];
+
+        // 각 종목별 초기 지급 주식 수 계산
+        const companyStockCounts: Record<string, number> = {};
+        for (const company of randomCompanies) {
+          companyStockCounts[company] = (companyStockCounts[company] ?? 0) + 1;
+        }
+
+        const stockStorages = companies.map((company) => {
+          const initialCount = companyStockCounts[company] ?? 0;
+          const stockCountHistory = new Array(StockConfig.MAX_STOCK_IDX + 1).fill(0);
+
+          // 초기 주식이 있으면 히스토리에도 반영
+          if (initialCount > 0) {
+            stockCountHistory[0] = initialCount;
+          }
+
+          return {
+            companyName: company,
+            stockAveragePrice: initialCount > 0 ? StockConfig.INIT_STOCK_PRICE : 0,
+            stockAveragePriceHistory: new Array(StockConfig.MAX_STOCK_IDX + 1).fill(
+              initialCount > 0 ? StockConfig.INIT_STOCK_PRICE : 0,
+            ),
+            stockCountCurrent: initialCount,
+            stockCountHistory,
+          } as StockStorageSchema;
+        });
+
         return this.findOneAndUpdate(
           { stockId: user.stockId, userId: user.userId },
           {
             lastActivityTime: dayjs().toISOString(),
             money: stock.initialMoney,
+            moneyHistory: new Array(StockConfig.MAX_STOCK_IDX + 1).fill(stock.initialMoney),
             resultByRound: [...(user.resultByRound ?? [])],
             stockStorages,
           },

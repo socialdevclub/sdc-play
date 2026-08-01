@@ -6,6 +6,7 @@ import { 게임모드 } from '../../../../constant';
 import { type UseStockInfo } from '../hooks/useStockInfo';
 import { BEARISH_COLOR, BULLISH_COLOR } from '../../../../color';
 import { MyLevel } from './MyLevel';
+import { MyGrade } from './MyGrade';
 
 // 상수 분리
 const TITLE_MAP = {
@@ -16,6 +17,7 @@ const TITLE_MAP = {
     [게임모드.DALTO]: '총 자산',
     [게임모드.STOCK]: '총 자산',
     [게임모드.REALISM]: '총 자산', // 사용 안함
+    [게임모드.V2]: '총 자산',
   },
   모두팔고난뒤의순이익: {
     // 초기금액 대비 현재 순수익률
@@ -23,6 +25,7 @@ const TITLE_MAP = {
     [게임모드.DALTO]: '총 이익',
     [게임모드.STOCK]: '총 이익',
     [게임모드.REALISM]: '총 이익', // 사용 안함
+    [게임모드.V2]: '총 이익',
   },
   잔액: {
     // 현재 보유금(현금)
@@ -30,6 +33,7 @@ const TITLE_MAP = {
     [게임모드.DALTO]: '현금',
     [게임모드.STOCK]: '현금',
     [게임모드.REALISM]: '주문 가능 금액',
+    [게임모드.V2]: '현금',
   },
   주식가치: {
     // 현재 총 보유 주식 가치
@@ -37,6 +41,7 @@ const TITLE_MAP = {
     [게임모드.DALTO]: '평가금',
     [게임모드.STOCK]: '평가금',
     [게임모드.REALISM]: '평가금',
+    [게임모드.V2]: '평가금',
   },
   투자비용: {
     // 현재 보유 중인 주식의 총 구매 비용
@@ -44,6 +49,7 @@ const TITLE_MAP = {
     [게임모드.DALTO]: '매입금',
     [게임모드.STOCK]: '매입금', // 사용 안함
     [게임모드.REALISM]: '매입금',
+    [게임모드.V2]: '매입금',
   },
   현재주식수익: {
     // 보유 주식의 투자 비용 대비 순수익금, 순수익률
@@ -52,13 +58,14 @@ const TITLE_MAP = {
     [게임모드.DALTO]: '순수익',
     [게임모드.STOCK]: '순수익', // 사용 안함
     [게임모드.REALISM]: '순수익',
+    [게임모드.V2]: '순수익',
   },
 } as const;
 
 // 타입 정의 개선
 type UserSummaryProps = Pick<
   UseStockInfo,
-  'user' | 'users' | 'userId' | 'allUserSellPriceDesc' | 'allProfitDesc' | 'stock'
+  'user' | 'users' | 'userId' | 'allUserSellPriceDesc' | 'allProfitDesc' | 'stock' | 'timeIdx'
 > & {
   moneyRatio: string;
   allSellPrice: number;
@@ -101,6 +108,7 @@ const UserSummary = ({
   stock,
   totalInvestment,
   totalProfitLoss,
+  timeIdx,
 }: UserSummaryProps) => {
   if (!user || !stock) return null;
 
@@ -123,7 +131,11 @@ const UserSummary = ({
 
   return (
     <>
-      {stock.gameMode !== 'realism' && <MyLevel moneyRatio={moneyRatio} initialMoney={stock.initialMoney} />}
+      {/* V2 모드: 고래/새우/개미 등급 표시, 그 외: 기존 레벨 표시 */}
+      {stock.gameMode === 게임모드.V2 && timeIdx !== undefined && <MyGrade user={user} stock={stock} idx={timeIdx} />}
+      {stock.gameMode !== 'realism' && stock.gameMode !== 게임모드.V2 && (
+        <MyLevel moneyRatio={moneyRatio} initialMoney={stock.initialMoney} />
+      )}
 
       {/* 잔액 카드 */}
       <Card
